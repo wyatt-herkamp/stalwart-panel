@@ -1,0 +1,7 @@
+[workspace]
+members = [
+    "utils",
+    "entities",
+    "migration",
+    "setup-tool",
+"backend"]

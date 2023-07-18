@@ -1,0 +1,29 @@
+[package]
+name = "stalwart-panel"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+# Web framework
+actix-web = { version = "4.3",features = ["rustls"] }
+actix-service = "2"
+actix-files = "0.6"
+actix-cors = "0.6"
+rustls = "0.20.8"
+rustls-pemfile = "1"
+# Tokio
+tokio = { version = "1", features = ["full"] }
+# Database
+entities = { path = "../entities", default-features = false, features = ["actix"] }
+sea-orm = { version = "0.11", features = ["runtime-actix-rustls","macros","sqlx-mysql","sqlx-postgres"] }
+sqlx = "0.6"
+# Utils
+argon2 = "0.5.0"
+thiserror = "1"
+this_actix_error = { git = "https://github.com/wyatt-herkamp/this_actix_errors.git" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+# CLI
+clap = { version = "4",features = ["derive"] }

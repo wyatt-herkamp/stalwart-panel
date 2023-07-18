@@ -1,0 +1,18 @@
+[package]
+name = "entities"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+serde = { version = "1.0" ,features = ["derive"] }
+sea-orm = { version = "0.11", features = ["macros","sqlx-mysql","sqlx-postgres"] }
+sqlx = "0.6"
+serde_json = "1.0.91"
+ahash = "0.8"
+rand = { version = "0.8.5",features=["std_rng"]}
+[features]
+default =["cli"]
+cli = ["sea-orm/runtime-tokio-rustls"]
+actix = ["sea-orm/runtime-actix-rustls"]
