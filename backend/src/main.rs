@@ -9,7 +9,7 @@ struct Command {
 }
 #[actix_web::main]
 async fn main() -> io::Result<()> {
-    let command = Command::parse();
+    let _command = Command::parse();
 
     Ok(())
 }

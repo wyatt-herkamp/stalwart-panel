@@ -1,12 +1,19 @@
 use sea_orm::entity::prelude::*;
-use sea_orm::strum::{Display, EnumString};
+use sea_orm::strum::EnumString;
 
 use serde::{Deserialize, Serialize};
-use sqlx::{FromRow, Type};
 
 #[derive(
-EnumIter, DeriveActiveEnum, Clone, Debug, PartialEq, Eq, Deserialize, Serialize, Default,
-EnumString
+    EnumIter,
+    DeriveActiveEnum,
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    Deserialize,
+    Serialize,
+    Default,
+    EnumString,
 )]
 #[sea_orm(rs_type = "String", db_type = "Text")]
 pub enum AccountType {

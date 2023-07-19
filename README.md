@@ -1,5 +1,7 @@
 # Stalwart Panel
 An Unofficial Stalwart Panel. 
+### Requirements
+- Stalwart 0.3
 
 ### Goals
 - Add, Remove, and Modify Accounts

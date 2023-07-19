@@ -10,6 +10,21 @@ pub enum Database {
     None,
 }
 
+impl Database {
+    pub fn test() -> Self {
+        Database::Postgres(PostgresSettings {
+            user: "postgres".to_string(),
+            password: "postgres".to_string(),
+            host: "localhost:5432".to_string(),
+            database: "stalwart-panel-test".to_string(),
+        })
+    }
+}
+impl Default for Database {
+    fn default() -> Self {
+        Database::None
+    }
+}
 impl Display for Database {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -52,7 +67,12 @@ impl Display for PostgresSettings {
         )
     }
 }
-
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub enum EmailEncryption {
+    NONE,
+    StartTLS,
+    TLS,
+}
 /// Yes the email software management software needs email settings
 ///
 /// This is for sending reset password emails and any other emails.
@@ -61,7 +81,7 @@ pub struct EmailSetting {
     pub username: String,
     pub password: String,
     pub host: String,
-    pub encryption: String,
+    pub encryption: EmailEncryption,
     pub from: String,
     pub port: u16,
 }
@@ -72,7 +92,7 @@ impl Default for EmailSetting {
             username: "no-reply@example.com".to_string(),
             password: "".to_string(),
             host: "example.com".to_string(),
-            encryption: "TLS".to_string(),
+            encryption: EmailEncryption::TLS,
             from: "no-reply@example.com".to_string(),
             port: 587,
         }
@@ -96,8 +116,8 @@ impl Default for Settings {
             database: Database::None,
             email: Default::default(),
             postmaster_address: "".to_string(),
-            default_group: 0,
-            root_group: 1,
+            default_group: 1,
+            root_group: 2,
             stalwart_config: PathBuf::new(),
             #[cfg(not(target_os = "linux"))]
             // TODO add default for windows

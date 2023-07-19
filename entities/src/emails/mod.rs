@@ -4,8 +4,16 @@ use sea_orm::strum::EnumString;
 use serde::{Deserialize, Serialize};
 
 #[derive(
-    EnumIter, DeriveActiveEnum, Clone, Debug, PartialEq, Eq, Deserialize, Serialize, Default,
-EnumString
+    EnumIter,
+    DeriveActiveEnum,
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    Deserialize,
+    Serialize,
+    Default,
+    EnumString,
 )]
 #[sea_orm(rs_type = "String", db_type = "Text")]
 pub enum EmailType {
@@ -16,6 +24,9 @@ pub enum EmailType {
     #[sea_orm(string_value = "alias")]
     #[strum(serialize = "alias")]
     Alias,
+    #[sea_orm(string_value = "list")]
+    #[strum(serialize = "list")]
+    List,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel, Deserialize, Serialize)]

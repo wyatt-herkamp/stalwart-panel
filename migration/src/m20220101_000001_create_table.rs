@@ -1,9 +1,6 @@
-use crate::sea_orm::ActiveValue::Set;
 use crate::sea_orm::Schema;
-use entities::groups::GroupPermissions;
-use entities::GroupEntity;
+
 use sea_orm_migration::prelude::*;
-use sea_orm_migration::sea_orm::{EntityTrait, NotSet};
 
 #[derive(DeriveMigrationName)]
 pub struct Migration;

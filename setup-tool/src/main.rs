@@ -1,19 +1,22 @@
-use std::collections::HashMap;
-use clap::builder::Str;
 use clap::{Parser, ValueEnum};
+use entities::account::AccountType;
 use entities::emails::EmailType;
-use entities::groups::GroupPermissions;
-use entities::{AccountEntity, ActiveAccountModel, ActiveEmailModel, EmailEntity, GroupEntity};
+use entities::groups::{ActiveModel, GroupPermissions};
+use entities::{AccountEntity, ActiveAccountModel, ActiveEmailModel, EmailEntity, GroupEntity, now};
+use log::{debug, error, info};
 use migration::{Migrator, MigratorTrait};
+use sea_orm::sea_query::OnConflict;
 use sea_orm::{ActiveValue, ConnectOptions, DatabaseConnection, EntityTrait};
-use sqlx::{Any, AnyConnection, Connection, Sqlite, SqliteConnection};
+use sqlx::{AnyConnection, Connection};
+use std::collections::HashMap;
 use std::fs::read_to_string;
 use std::path::PathBuf;
 use std::str::FromStr;
-use log::{debug, info};
 use toml_edit::{Document, Item};
-use entities::account::AccountType;
-use utils::config::{Database, MysqlSettings, PostgresSettings};
+use utils::config::{
+    Database, EmailEncryption, EmailSetting, MysqlSettings, PostgresSettings, Settings,
+};
+use utils::stalwart_config::sql::{SQLColumns, SQLQuery};
 
 #[derive(ValueEnum, Debug, Clone)]
 pub enum DatabaseType {
@@ -34,12 +37,15 @@ struct Command {
     database_password: String,
     #[clap(long)]
     database_name: String,
+    #[clap(long, default_value = "true")]
+    import: bool,
 }
+
 #[tokio::main]
 async fn main() {
     let command = Command::parse();
     let toml_content =
-        read_to_string(command.stalwart_config).expect("Failed to read stalwart config file");
+        read_to_string(&command.stalwart_config).expect("Failed to read stalwart config file");
 
     let database_config = match command.database_type {
         DatabaseType::Mysql => Database::Mysql(MysqlSettings {
@@ -61,64 +67,173 @@ async fn main() {
             .await
             .expect("Failed to connect to database");
 
-    Migrator::up(&database_connection, None)
-        .await
-        .expect("Failed to run migrations");
-    let mut stalwart_config: Document = toml_content
+    let stalwart_config: Document = toml_content
         .parse()
         .expect("Failed to parse stalwart config file");
 
+    let super_user_name = stalwart_config["directory"]["sql"]["options"]["superuser-group"]
+        .as_str()
+        .unwrap_or("superuser");
+    setup_database(&mut database_connection, super_user_name).await;
+
+    if command.import {
+        let old_database = stalwart_config["directory"]["sql"]["address"]
+            .as_str()
+            .expect("Failed to parse old database address");
+
+        info!("Importing Old Database");
+        import_database(&mut database_connection, old_database, &super_user_name).await;
+    } else {
+        info!("Skipping Import. Creating Default Account");
+        create_default_account(&mut database_connection).await;
+    }
+    // TODO add the new database to the config file
+
+    tokio::spawn(async move {
+        if let Err(e) = database_connection.close().await {
+            error!("Failed to close database connection {}", e);
+        }
+    });
+
+    let main_domain =
+        if let Some(array) = stalwart_config["directory"]["imap"]["lookup"]["domains"].as_array() {
+            array
+                .get(0)
+                .and_then(|item| item.as_str())
+                .unwrap_or("example.com")
+        } else {
+            "example.com"
+        };
+    let postmaster_address = format!("postmaster@{}", main_domain);
+
+    let email = EmailSetting {
+        username: "postmaster".to_string(),
+        password: "<PLEASE PROVIDE THE PASSWORD>".to_string(),
+        host: stalwart_config["server"]["hostname"]
+            .as_str()
+            .map(|s| s.to_string())
+            .unwrap_or("localhost".to_string()),
+        encryption: EmailEncryption::StartTLS,
+        from: format!("Stalwart Panel<panel@{}>", main_domain),
+        port: 587,
+    };
+    update_config(&database_config, stalwart_config, &command.stalwart_config);
+
+    info!("Stalwart has been configured. Creating the panel config");
+
+    let config = Settings {
+        database: database_config,
+        email,
+        postmaster_address,
+        ..Default::default()
+    };
+
+    let config = toml::to_string_pretty(&config).expect("Failed to serialize config");
+
+    let config_file = PathBuf::from("stalwart-panel.toml");
+    if config_file.exists() {
+        std::fs::remove_file(&config_file).expect("Failed to remove old config file");
+    }
+    std::fs::write(&config_file, &config).expect("Failed to write config file");
+
+    info!("Stalwart Panel has been configured. Please double check stalwart-panel.toml and then run stalwart-panel");
+}
+
+async fn setup_database(database_connection: &DatabaseConnection, super_user_name: &str) {
+    Migrator::up(database_connection, None)
+        .await
+        .expect("Failed to run migrations");
+
     {
         let group = entities::ActiveGroupModel {
-            id: ActiveValue::NotSet,
+            id: ActiveValue::Set(1),
             group_name: ActiveValue::Set("user".to_string()),
             permissions: ActiveValue::Set(GroupPermissions::default()),
             created: ActiveValue::Set(Default::default()),
         };
-
-        GroupEntity::insert(group)
-            .exec(&database_connection)
-            .await
-            .expect("Failed to insert user group");
+        debug!("Inserting User Group {:?}", group);
+        insert_group(database_connection, group).await;
     }
-    let super_user_name = stalwart_config
-        .get("directory.sql.options.superuser-group")
-        .and_then(|item| item.as_str().map(|s| s.to_string()))
-        .unwrap_or_else(|| "superuser".to_string());
     {
-
         let group = entities::ActiveGroupModel {
-            id: ActiveValue::NotSet,
-            group_name: ActiveValue::Set(super_user_name.clone()),
+            id: ActiveValue::Set(2),
+            group_name: ActiveValue::Set(super_user_name.to_string()),
             permissions: ActiveValue::Set(GroupPermissions::new_admin()),
             created: ActiveValue::Set(Default::default()),
         };
-
-        GroupEntity::insert(group)
-            .exec(&database_connection)
-            .await
-            .expect("Failed to insert superuser group");
+        debug!("Inserting User Group {:?}", group);
+        insert_group(database_connection, group).await;
     }
-
-    let mut old_database = stalwart_config.get("directory.sql.address");
-
-    match old_database {
-        None => {
-            println!("No old database found, No database to import");
-
-            create_default_account(&database_connection).await;
-        }
-        Some(database) => {
-            let database = database.as_str().expect("Failed to parse database address");
-
-            import_database(&mut database_connection, database, &super_user_name).await;
-        }
-    }
-
-    // TODO add the new database to the config file
 }
 
-async fn create_default_account(database_connection: &DatabaseConnection) {
+async fn insert_group(database_connection: &DatabaseConnection, group: ActiveModel) {
+    use entities::groups::Column;
+    GroupEntity::insert(group)
+        .on_conflict(
+            OnConflict::column(Column::Id)
+                .update_columns(vec![Column::GroupName, Column::Permissions])
+                .to_owned(),
+        )
+        .exec(database_connection)
+        .await
+        .expect("Failed to insert user group");
+}
+
+/// Tests to see if the config file is updated correctly
+#[test]
+pub fn test_config_update() {
+    let current_dir = std::env::current_dir()
+        .expect("Failed to get current directory")
+        .parent()
+        .unwrap()
+        .to_path_buf();
+    let file = current_dir.join("test_data").join("stalwart-config.toml");
+    assert!(file.exists(), "Test file does not exist {}", file.display());
+    let copy = current_dir
+        .join("test_data")
+        .join("stalwart-config-test.toml");
+    if copy.exists() {
+        std::fs::remove_file(&copy).expect("Failed to remove test file");
+    }
+    std::fs::copy(&file, &copy).expect("Failed to copy file");
+
+    drop(file);
+    let toml_content = read_to_string(&copy).expect("Failed to read stalwart config file");
+
+    let document: Document = toml_content
+        .parse()
+        .expect("Failed to parse stalwart config file");
+
+    let database = Database::test();
+
+    update_config(&database, document, &copy);
+}
+
+fn update_config(database_config: &Database, mut stalwart_config: Document, file: &PathBuf) {
+    stalwart_config["directory"]["sql"]["address"] =
+        Item::Value(database_config.to_string().into());
+
+    let queries = match &database_config {
+        Database::Mysql(_) => SQLQuery::new_mysql(),
+        Database::Postgres(_) => SQLQuery::new_postgres(),
+        Database::None => {
+            unreachable!("How did you connect to a database that doesn't exist?")
+        }
+    };
+    stalwart_config["directory"]["sql"]["queries"] = queries.into();
+    stalwart_config["directory"]["sql"]["columns"] = SQLColumns::default().into();
+
+    // Backup the old config file
+    let backup_file = file.with_extension("bak");
+    if backup_file.exists() {
+        std::fs::remove_file(&backup_file).expect("Failed to remove old backup file");
+    }
+    std::fs::rename(&file, &backup_file).expect("Failed to backup stalwart config file");
+    let content = stalwart_config.to_string();
+    std::fs::write(file, &content).expect("Failed to write new stalwart config file");
+}
+
+async fn create_default_account(database_connection: &mut DatabaseConnection) {
     let postmaster = ActiveAccountModel {
         id: Default::default(),
         username: ActiveValue::Set("postmaster".to_string()),
@@ -129,25 +244,25 @@ async fn create_default_account(database_connection: &DatabaseConnection) {
         account_type: ActiveValue::Set(AccountType::Individual),
         active: ActiveValue::Set(true),
         backup_email: Default::default(),
-        created: Default::default(),
+        created: now(),
     };
 
-    let id = entities::AccountEntity::insert(postmaster)
-        .exec(&database_connection)
+    let id =AccountEntity::insert(postmaster)
+        .exec(database_connection)
         .await
         .expect("Failed to insert postmaster account")
         .last_insert_id;
 
-    let postmaster_email = entities::ActiveEmailModel {
+    let postmaster_email = ActiveEmailModel {
         id: Default::default(),
         email: ActiveValue::Set("postmaster@localhost".to_string()),
-        created: Default::default(),
+        created: now(),
         account: ActiveValue::Set(id),
         email_type: ActiveValue::Set(EmailType::Primary),
     };
 
-    entities::EmailEntity::insert(postmaster_email)
-        .exec(&database_connection)
+    EmailEntity::insert(postmaster_email)
+        .exec(database_connection)
         .await
         .expect("Failed to insert postmaster email");
 }
@@ -160,12 +275,12 @@ async fn create_default_account(database_connection: &DatabaseConnection) {
 /// - Type
 /// - Quota
 /// - Active
- type OldAccount = (String, String, String, String,i64, bool);
+type OldAccount = (String, String, String, String, i64, bool);
 /// Table Layout for the Email Table
 /// - Name
 /// - Address
 /// - Type
- type OldEmail = (String, String, String);
+type OldEmail = (String, String, String);
 
 /// Imports the Default Stalwart Database to the new database
 ///
@@ -180,11 +295,10 @@ async fn import_database(database: &mut DatabaseConnection, old_database: &str, 
         .await
         .expect("Failed to connect to old database");
     info!("Loading Old Database Tables");
-    let old_accounts: Vec<OldAccount> =
-        sqlx::query_as("SELECT * FROM accounts")
-            .fetch_all(&mut old_database)
-            .await
-            .expect("Failed to fetch accounts");
+    let old_accounts: Vec<OldAccount> = sqlx::query_as("SELECT * FROM accounts")
+        .fetch_all(&mut old_database)
+        .await
+        .expect("Failed to fetch accounts");
     debug!("Found {} Accounts", old_accounts.len());
     let group_members: Vec<(String, String)> = sqlx::query_as("SELECT * FROM group_members")
         .fetch_all(&mut old_database)
@@ -199,59 +313,67 @@ async fn import_database(database: &mut DatabaseConnection, old_database: &str, 
     // Stalwart allows users to be apart of multiple groups, but we don't support that yet
     // By default this is going to make anyone with a superuser group a superuser. Then everyone else default
     // Stalwart is not production ready so I doubt anyone has some massive user base with multiple groups
-    let group_members: HashMap<String, i64> = group_members.into_iter().map(|(name, group)|{
-        if group == superuser{
-            (name, 2)
-        } else {
-            (name, 1)
-        }
-    }).collect();
+    let group_members: HashMap<String, i64> = group_members
+        .into_iter()
+        .map(|(name, group)| {
+            if group == superuser {
+                (name, 2)
+            } else {
+                (name, 1)
+            }
+        })
+        .collect();
 
     let new_accounts = old_accounts
         .into_iter()
-        .map(|(username, password, description, t,quota,  active)| {
+        .map(|(username, password, description, t, quota, active)| {
             let account_type = AccountType::from_str(&t).expect("Failed to parse account type");
             let group_id = group_members.get(&username).copied().unwrap_or(1);
             // Yes I am cloning. I am really lazy
-            (username.clone(), ActiveAccountModel {
-                id: Default::default(),
-                username: ActiveValue::Set(username),
-                description: ActiveValue::Set(description),
-                group_id: ActiveValue::Set(group_id),
-                password: ActiveValue::Set(password),
-                quota: ActiveValue::Set(quota),
-                account_type: ActiveValue::Set(account_type),
-                active: ActiveValue::Set(active),
-                backup_email: ActiveValue::Set(None),
-                created: Default::default(),
-            })
+            (
+                username.clone(),
+                ActiveAccountModel {
+                    id: Default::default(),
+                    username: ActiveValue::Set(username),
+                    description: ActiveValue::Set(description),
+                    group_id: ActiveValue::Set(group_id),
+                    password: ActiveValue::Set(password),
+                    quota: ActiveValue::Set(quota),
+                    account_type: ActiveValue::Set(account_type),
+                    active: ActiveValue::Set(active),
+                    backup_email: ActiveValue::Set(None),
+                    created: now(),
+                },
+            )
         })
         .collect::<Vec<(String, ActiveAccountModel)>>();
 
-
-    for (name, account) in new_accounts{
+    for (name, account) in new_accounts {
         // TODO once drain filter is stabilized move to it https://github.com/rust-lang/rust/issues/43244
-        let collected_emails = old_emails.iter().filter(|e| {
-            e.0 == name
-        }).map(|e| {
-            let email_type = EmailType::from_str(&e.2).unwrap_or(EmailType::Alias);
-            (e.1.clone(), email_type)
-        }).collect::<Vec<(String, EmailType)>>();
+        let collected_emails = old_emails
+            .iter()
+            .filter(|e| e.0 == name)
+            .map(|e| {
+                let email_type = EmailType::from_str(&e.2).unwrap_or(EmailType::Alias);
+                (e.1.clone(), email_type)
+            })
+            .collect::<Vec<(String, EmailType)>>();
 
         let id = AccountEntity::insert(account)
             .exec(database)
             .await
-            .expect("Failed to insert account").last_insert_id;
+            .expect("Failed to insert account")
+            .last_insert_id;
         info!("Inserted Account {}", name);
         // Add all of the emails
-        for (email, email_type) in collected_emails{
+        for (email, email_type) in collected_emails {
             debug!("Inserting Email {} for Account {}", email, name);
-            let email = ActiveEmailModel{
+            let email = ActiveEmailModel {
                 id: Default::default(),
                 account: ActiveValue::Set(id),
                 email: ActiveValue::Set(email),
                 email_type: ActiveValue::Set(email_type),
-                created: Default::default(),
+                created: now(),
             };
 
             EmailEntity::insert(email)

@@ -1,3 +1,5 @@
 /target
 /test
 .idea
+test_data/stalwart-config-test.bak
+test_data/stalwart-config-test.toml
