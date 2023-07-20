@@ -67,8 +67,9 @@ impl Display for PostgresSettings {
         )
     }
 }
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, Default)]
 pub enum EmailEncryption {
+    #[default]
     NONE,
     StartTLS,
     TLS,
@@ -100,7 +101,9 @@ impl Default for EmailSetting {
 }
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Settings {
+    pub bind_address: String,
     pub database: Database,
+    pub tls: Option<TlsConfig>,
     pub email: EmailSetting,
     pub postmaster_address: String,
     pub default_group: i64,
@@ -113,7 +116,9 @@ pub struct Settings {
 impl Default for Settings {
     fn default() -> Self {
         Self{
+            bind_address: "0.0.0.0:5312".to_string(),
             database: Database::None,
+            tls: None,
             email: Default::default(),
             postmaster_address: "".to_string(),
             default_group: 1,
@@ -126,4 +131,9 @@ impl Default for Settings {
             restart_stalwart_command: "/usr/bin/systemctl restart stalwart-mail.service".to_string(),
         }
     }
+}
+#[derive(Debug, Deserialize, Serialize, Clone, Default)]
+pub struct TlsConfig {
+    pub private_key: PathBuf,
+    pub certificate_chain: PathBuf,
 }

@@ -39,11 +39,10 @@ pub struct Model {
     pub password: String,
     #[sea_orm(default = "0")]
     pub quota: i64,
-    #[sea_orm(default = "AccountType::Individual")]
+    #[sea_orm(default)]
     pub account_type: AccountType,
     #[sea_orm(default = "true")]
     pub active: bool,
-    #[sea_orm(default = "None")]
     pub backup_email: Option<String>,
     pub created: DateTimeWithTimeZone,
 }

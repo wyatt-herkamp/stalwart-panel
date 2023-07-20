@@ -49,6 +49,10 @@ impl Default for TTL {
         }
     }
 }
+
+/// The lookup queries that Stalwart uses to retrieve the data it needs
+///
+/// You can read about these queries in the [Stalwart Documentation](https://stalw.art/docs/directory/types/sql#lookup-queries)
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct SQLQuery {
     pub name: Cow<'static, str>,
@@ -99,6 +103,9 @@ impl Into<Item> for SQLQuery {
         Item::Table(table)
     }
 }
+/// The columns that Stalwart uses to retrieve the data it needs
+///
+/// You can read about these columns in the [Stalwart Documentation](https://stalw.art/docs/directory/types/sql#column-mappings)
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct SQLColumns {
     pub name: Cow<'static, str>,

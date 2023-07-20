@@ -16,7 +16,30 @@ impl MigrationTrait for Migration {
         Ok(())
     }
 
-    async fn down(&self, _manager: &SchemaManager) -> Result<(), DbErr> {
-        todo!()
+    async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+        manager
+            .drop_table(TableDropStatement::new().table(Emails::Table).to_owned())
+            .await?;
+        manager
+            .drop_table(TableDropStatement::new().table(Accounts::Table).to_owned())
+            .await?;
+        manager
+            .drop_table(TableDropStatement::new().table(Groups::Table).to_owned())
+            .await?;
+        Ok(())
     }
+}
+#[derive(Iden)]
+pub enum Groups {
+    Table,
+}
+
+#[derive(Iden)]
+pub enum Accounts {
+    Table,
+}
+
+#[derive(Iden)]
+pub enum Emails {
+    Table,
 }

@@ -2,11 +2,16 @@ use clap::{Parser, ValueEnum};
 use entities::account::AccountType;
 use entities::emails::EmailType;
 use entities::groups::{ActiveModel, GroupPermissions};
-use entities::{AccountEntity, ActiveAccountModel, ActiveEmailModel, EmailEntity, GroupEntity, now};
+use entities::{
+    now, AccountEntity, ActiveAccountModel, ActiveEmailModel, EmailEntity, GroupEntity,
+};
 use log::{debug, error, info};
 use migration::{Migrator, MigratorTrait};
+use rand::distributions::Distribution;
+use rand::rngs::StdRng;
+use rand::{Rng, SeedableRng};
 use sea_orm::sea_query::OnConflict;
-use sea_orm::{ActiveValue, ConnectOptions, DatabaseConnection, EntityTrait};
+use sea_orm::{ActiveValue, ConnectOptions, DatabaseConnection, EntityTrait, QueryOrder};
 use sqlx::{AnyConnection, Connection};
 use std::collections::HashMap;
 use std::fs::read_to_string;
@@ -16,8 +21,8 @@ use toml_edit::{Document, Item};
 use utils::config::{
     Database, EmailEncryption, EmailSetting, MysqlSettings, PostgresSettings, Settings,
 };
+use utils::password;
 use utils::stalwart_config::sql::{SQLColumns, SQLQuery};
-
 #[derive(ValueEnum, Debug, Clone)]
 pub enum DatabaseType {
     Mysql,
@@ -76,17 +81,18 @@ async fn main() {
         .unwrap_or("superuser");
     setup_database(&mut database_connection, super_user_name).await;
 
-    if command.import {
+    let password = if command.import {
         let old_database = stalwart_config["directory"]["sql"]["address"]
             .as_str()
             .expect("Failed to parse old database address");
 
         info!("Importing Old Database");
         import_database(&mut database_connection, old_database, &super_user_name).await;
+        "<Please Provide Password>".to_string()
     } else {
         info!("Skipping Import. Creating Default Account");
-        create_default_account(&mut database_connection).await;
-    }
+        create_default_account(&mut database_connection).await
+    };
     // TODO add the new database to the config file
 
     tokio::spawn(async move {
@@ -108,7 +114,7 @@ async fn main() {
 
     let email = EmailSetting {
         username: "postmaster".to_string(),
-        password: "<PLEASE PROVIDE THE PASSWORD>".to_string(),
+        password,
         host: stalwart_config["server"]["hostname"]
             .as_str()
             .map(|s| s.to_string())
@@ -125,7 +131,7 @@ async fn main() {
         database: database_config,
         email,
         postmaster_address,
-        ..Default::default()
+        ..Settings::default()
     };
 
     let config = toml::to_string_pretty(&config).expect("Failed to serialize config");
@@ -140,6 +146,8 @@ async fn main() {
 }
 
 async fn setup_database(database_connection: &DatabaseConnection, super_user_name: &str) {
+    // Drop old tables
+
     Migrator::up(database_connection, None)
         .await
         .expect("Failed to run migrations");
@@ -233,13 +241,26 @@ fn update_config(database_config: &Database, mut stalwart_config: Document, file
     std::fs::write(file, &content).expect("Failed to write new stalwart config file");
 }
 
-async fn create_default_account(database_connection: &mut DatabaseConnection) {
+async fn create_default_account(database_connection: &mut DatabaseConnection) -> String {
+    // Generate Random Password
+
+    let mut rng = StdRng::from_entropy();
+    let password: String = rand::distributions::Alphanumeric
+        .sample_iter(&mut rng)
+        .take(16)
+        .map(char::from)
+        .collect();
+
+    // Argon2 Hash the password
+
+    let password_hashed = password::encrypt_password(&password).expect("Failed to hash password");
+
     let postmaster = ActiveAccountModel {
         id: Default::default(),
         username: ActiveValue::Set("postmaster".to_string()),
         description: ActiveValue::Set("Postmaster Account".to_string()),
         group_id: ActiveValue::Set(2),
-        password: ActiveValue::Set("".to_string()),
+        password: ActiveValue::Set(password_hashed),
         quota: ActiveValue::Set(0),
         account_type: ActiveValue::Set(AccountType::Individual),
         active: ActiveValue::Set(true),
@@ -247,7 +268,7 @@ async fn create_default_account(database_connection: &mut DatabaseConnection) {
         created: now(),
     };
 
-    let id =AccountEntity::insert(postmaster)
+    let id = AccountEntity::insert(postmaster)
         .exec(database_connection)
         .await
         .expect("Failed to insert postmaster account")
@@ -265,6 +286,8 @@ async fn create_default_account(database_connection: &mut DatabaseConnection) {
         .exec(database_connection)
         .await
         .expect("Failed to insert postmaster email");
+
+    password
 }
 
 /// Table Layout for the Account Table
@@ -360,6 +383,11 @@ async fn import_database(database: &mut DatabaseConnection, old_database: &str, 
             .collect::<Vec<(String, EmailType)>>();
 
         let id = AccountEntity::insert(account)
+            .on_conflict(
+                OnConflict::column(entities::account::Column::Username)
+                    .do_nothing()
+                    .to_owned(),
+            )
             .exec(database)
             .await
             .expect("Failed to insert account")
@@ -368,6 +396,7 @@ async fn import_database(database: &mut DatabaseConnection, old_database: &str, 
         // Add all of the emails
         for (email, email_type) in collected_emails {
             debug!("Inserting Email {} for Account {}", email, name);
+
             let email = ActiveEmailModel {
                 id: Default::default(),
                 account: ActiveValue::Set(id),
