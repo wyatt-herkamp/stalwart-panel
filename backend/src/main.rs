@@ -1,7 +1,13 @@
+pub mod api;
+pub mod auth;
+pub mod error;
+
 use actix_cors::Cors;
 use actix_web::web::Data;
-use actix_web::{App, HttpServer};
+use actix_web::{App, HttpServer, Scope};
+use chrono::Duration;
 use clap::Parser;
+use parking_lot::Mutex;
 use rustls::{Certificate, PrivateKey, ServerConfig as RustlsServerConfig};
 use rustls_pemfile::{certs, pkcs8_private_keys};
 use sea_orm::{ConnectOptions, Database};
@@ -11,13 +17,24 @@ use std::io::BufReader;
 use std::path::PathBuf;
 use tokio::fs::read_to_string;
 use utils::config::Settings;
+use utils::stalwart_manager::StalwartManager;
 
+use crate::auth::middleware::HandleSession;
+use crate::auth::session::SessionManager;
+pub use error::WebsiteError as Error;
+
+pub type Result<T> = std::result::Result<T, Error>;
 #[derive(Parser)]
 struct Command {
     #[clap(short, long)]
     config: PathBuf,
+    #[clap(short, long)]
+    stalwart_manager: PathBuf,
 }
 pub type DatabaseConnection = Data<sea_orm::DatabaseConnection>;
+/// Mutex's are slightly faster than RwLocks and we don't really need to have multiple readers
+/// This could be changed in the future if we need to have multiple readers
+pub type SlalwartManager = Data<Mutex<StalwartManager>>;
 #[actix_web::main]
 async fn main() -> io::Result<()> {
     let command = Command::parse();
@@ -26,25 +43,33 @@ async fn main() -> io::Result<()> {
 
     let server_config: Settings = toml::from_str(&config).expect("Failed to parse config");
 
-    if !server_config.stalwart_config.exists() {
-        // We access the Stalwart Config to add and remove domains
-        return Err(io::Error::new(
-            io::ErrorKind::NotFound,
-            "Stalwart Config not found",
-        ));
-    }
-
     let database = Database::connect(ConnectOptions::new(server_config.database.to_string()))
         .await
         .map(Data::new)
         .expect("Failed to connect to database");
+
+    let stalwart_manager = StalwartManager::new(command.stalwart_manager)
+        .map(|v| Data::new(Mutex::new(v)))
+        .expect("Failed to create Stalwart Manager");
+
+    let session_manager = SessionManager::new(PathBuf::new().join("sessions.redb"))
+        .map(Data::new)
+        .expect("Failed to create session manager");
+
+    SessionManager::start_cleaner(session_manager.clone().into_inner(), Duration::hours(1));
 
     let server = HttpServer::new(move || {
         let cors = Cors::default()
             .allow_any_origin()
             .allow_any_header()
             .supports_credentials();
-        App::new().wrap(cors).app_data(database.clone())
+        App::new()
+            .wrap(cors)
+            .app_data(database.clone())
+            .app_data(stalwart_manager.clone())
+            .app_data(session_manager.clone())
+            .service(Scope::new("/api").wrap(HandleSession(session_manager.clone())))
+            .configure(api::accounts::init)
     });
 
     let server = if let Some(tls) = server_config.tls {

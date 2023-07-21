@@ -124,7 +124,7 @@ impl Default for SQLColumns {
             name: "username".into(),
             description: "description".into(),
             secret: "password".into(),
-            email: "email".into(),
+            email: "email_address".into(),
             quota: "quota".into(),
             email_type: "account_type".into(),
         }

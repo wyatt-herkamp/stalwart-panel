@@ -2,6 +2,7 @@ use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
+
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(tag = "type", content = "settings")]
 pub enum Database {
@@ -108,14 +109,10 @@ pub struct Settings {
     pub postmaster_address: String,
     pub default_group: i64,
     pub root_group: i64,
-    // Used for Adding Domains
-    pub stalwart_config: PathBuf,
-    // Restart Stalwart Command
-    pub restart_stalwart_command: String,
 }
 impl Default for Settings {
     fn default() -> Self {
-        Self{
+        Self {
             bind_address: "0.0.0.0:5312".to_string(),
             database: Database::None,
             tls: None,
@@ -123,12 +120,6 @@ impl Default for Settings {
             postmaster_address: "".to_string(),
             default_group: 1,
             root_group: 2,
-            stalwart_config: PathBuf::new(),
-            #[cfg(not(target_os = "linux"))]
-            // TODO add default for windows
-            restart_stalwart_command: "".to_string(),
-            #[cfg(target_os = "linux")]
-            restart_stalwart_command: "/usr/bin/systemctl restart stalwart-mail.service".to_string(),
         }
     }
 }
@@ -136,4 +127,24 @@ impl Default for Settings {
 pub struct TlsConfig {
     pub private_key: PathBuf,
     pub certificate_chain: PathBuf,
+}
+
+/// This is in a separate file because it gets edited during runtime
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct StalwartManagerConfig<Config> {
+    // Used for Adding Domains
+    pub stalwart_config: PathBuf,
+    // Restart Stalwart Command
+    pub tracing_enabled: bool,
+
+    pub manager_config: Config,
+}
+impl<Config: Default> Default for StalwartManagerConfig<Config> {
+    fn default() -> Self {
+        Self {
+            stalwart_config: PathBuf::new(),
+            tracing_enabled: false,
+            manager_config: Config::default(),
+        }
+    }
 }

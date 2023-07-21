@@ -1,11 +1,14 @@
-use std::io;
-use std::path::PathBuf;
+use serde::de::DeserializeOwned;
+use serde::Serialize;
+
 /// A way of talking to Stalwart and telling it what to do even though its a different process
 pub trait AppConnection {
+    type Config: DeserializeOwned + Serialize + Default;
+
+    fn new(config: Self::Config) -> Self;
     fn restart(&self) -> Result<(), ()>;
 
     fn get_pid(&self) -> Result<u32, ()>;
-
 }
 
 pub mod none {
@@ -15,6 +18,12 @@ pub mod none {
     pub struct NoneConnection;
 
     impl AppConnection for NoneConnection {
+        type Config = ();
+
+        fn new(_: Self::Config) -> Self {
+            Self
+        }
+
         fn restart(&self) -> Result<(), ()> {
             Ok(())
         }
@@ -27,13 +36,37 @@ pub mod none {
 
 pub mod linux_connection {
     use super::AppConnection;
+    use serde::{Deserialize, Serialize};
+    #[derive(Debug, Deserialize, Serialize)]
+    pub struct LinuxConnectionConfig {
+        pub service_path: String,
+        pub systemctl_path: String,
+    }
+    impl Default for LinuxConnectionConfig {
+        fn default() -> Self {
+            Self {
+                service_path: "/etc/systemd/system/stalwart.service".to_string(),
+                systemctl_path: "/bin/systemctl".to_string(),
+            }
+        }
+    }
 
     #[derive(Debug)]
     pub struct LinuxConnection {
         pub service_path: String,
         pub systemctl_path: String,
     }
+
     impl AppConnection for LinuxConnection {
+        type Config = LinuxConnectionConfig;
+
+        fn new(config: Self::Config) -> Self {
+            Self {
+                service_path: config.service_path,
+                systemctl_path: config.systemctl_path,
+            }
+        }
+
         fn restart(&self) -> Result<(), ()> {
             let status = std::process::Command::new(&self.systemctl_path)
                 .arg("restart")
@@ -68,7 +101,6 @@ pub mod linux_connection {
                 }
                 Err(_) => Err(()),
             }
-
         }
     }
 }

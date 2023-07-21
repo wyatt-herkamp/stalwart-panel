@@ -31,10 +31,11 @@ mod tests {
 
     #[tokio::test]
     pub async fn create_database() {
-        let database_connection =
-            sea_orm::Database::connect(ConnectOptions::new(env!("DATABASE_URL").to_string()))
-                .await
-                .expect("Failed to connect to database");
+        let database_connection = sea_orm::Database::connect(ConnectOptions::new(
+            option_env!("DATABASE_URL").unwrap().to_string(),
+        ))
+        .await
+        .expect("Failed to connect to database");
 
         Migrator::up(&database_connection, None)
             .await

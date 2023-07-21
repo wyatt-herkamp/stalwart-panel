@@ -1,3 +1,6 @@
+pub mod database_helper;
+pub mod panel_user;
+
 use sea_orm::entity::prelude::*;
 use sea_orm::strum::EnumString;
 

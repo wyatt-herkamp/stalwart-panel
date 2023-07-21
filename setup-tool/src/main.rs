@@ -11,7 +11,7 @@ use rand::distributions::Distribution;
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 use sea_orm::sea_query::OnConflict;
-use sea_orm::{ActiveValue, ConnectOptions, DatabaseConnection, EntityTrait, QueryOrder};
+use sea_orm::{ActiveValue, ConnectOptions, DatabaseConnection, EntityTrait};
 use sqlx::{AnyConnection, Connection};
 use std::collections::HashMap;
 use std::fs::read_to_string;
@@ -20,9 +20,12 @@ use std::str::FromStr;
 use toml_edit::{Document, Item};
 use utils::config::{
     Database, EmailEncryption, EmailSetting, MysqlSettings, PostgresSettings, Settings,
+    StalwartManagerConfig,
 };
 use utils::password;
 use utils::stalwart_config::sql::{SQLColumns, SQLQuery};
+use utils::stalwart_manager::ManagerConfig;
+
 #[derive(ValueEnum, Debug, Clone)]
 pub enum DatabaseType {
     Mysql,
@@ -141,6 +144,24 @@ async fn main() {
         std::fs::remove_file(&config_file).expect("Failed to remove old config file");
     }
     std::fs::write(&config_file, &config).expect("Failed to write config file");
+
+    let stalwart_manager_config = ManagerConfig {
+        stalwart_config: command.stalwart_config,
+        ..StalwartManagerConfig::default()
+    };
+
+    let stalwart_manager_config =
+        toml::to_string_pretty(&stalwart_manager_config).expect("Failed to serialize config");
+
+    let stalwart_manager_config_file = PathBuf::from("stalwart-manager.toml");
+
+    if stalwart_manager_config_file.exists() {
+        std::fs::remove_file(&stalwart_manager_config_file)
+            .expect("Failed to remove old config file");
+    }
+
+    std::fs::write(&stalwart_manager_config_file, &stalwart_manager_config)
+        .expect("Failed to write config file");
 
     info!("Stalwart Panel has been configured. Please double check stalwart-panel.toml and then run stalwart-panel");
 }
@@ -276,7 +297,7 @@ async fn create_default_account(database_connection: &mut DatabaseConnection) ->
 
     let postmaster_email = ActiveEmailModel {
         id: Default::default(),
-        email: ActiveValue::Set("postmaster@localhost".to_string()),
+        email_address: ActiveValue::Set("postmaster@localhost".to_string()),
         created: now(),
         account: ActiveValue::Set(id),
         email_type: ActiveValue::Set(EmailType::Primary),
@@ -400,7 +421,7 @@ async fn import_database(database: &mut DatabaseConnection, old_database: &str, 
             let email = ActiveEmailModel {
                 id: Default::default(),
                 account: ActiveValue::Set(id),
-                email: ActiveValue::Set(email),
+                email_address: ActiveValue::Set(email),
                 email_type: ActiveValue::Set(email_type),
                 created: now(),
             };

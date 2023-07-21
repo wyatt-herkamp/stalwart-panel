@@ -1,47 +1,85 @@
+use crate::config::StalwartManagerConfig;
+use crate::stalwart_manager::app_connector::AppConnection;
 use log::warn;
+use std::path::PathBuf;
 use thiserror::Error;
 use toml_edit::{Array, Document, Formatted, Item, Table, Value};
-use crate::stalwart_manager::app_connector::AppConnection;
 
-mod app_connector;
+pub mod app_connector;
 #[cfg(not(target_os = "linux"))]
 pub type AppConnectionImpl = app_connector::none::NoneConnection;
 #[cfg(target_os = "linux")]
 pub type AppConnectionImpl = app_connector::linux_connection::LinuxConnection;
+
+pub type ManagerConfig = StalwartManagerConfig<<AppConnectionImpl as AppConnection>::Config>;
 #[derive(Debug, Error)]
 pub enum StalwartError {
+    #[error(transparent)]
     IO(#[from] std::io::Error),
+    #[error(transparent)]
+    Toml(#[from] toml::de::Error),
+    #[error(transparent)]
+    TomlEdit(#[from] toml_edit::TomlError),
     /// It wouldn't come up after the change and the revert
+    #[error("Stalwart cannot start")]
     StalwartCannotStart,
     /// It wouldn't come up after the change
-    StalwartDidNotStartAfterChange
+    #[error("Stalwart did not start after change")]
+    StalwartDidNotStartAfterChange,
 }
 #[derive(Debug)]
 pub struct StalwartManager {
     pub app_connection: AppConnectionImpl,
-    pub config_location: std::path::PathBuf,
+    pub stalwart_config: ManagerConfig,
+    pub stalwart_config_location: PathBuf,
     pub config: Document,
 }
 
 impl StalwartManager {
+    pub fn new(stalwart_config: PathBuf) -> Result<Self, StalwartError> {
+        let config = std::fs::read_to_string(&stalwart_config).expect("Failed to read config");
+        let manager_config: ManagerConfig = toml::from_str(&config)?;
+
+        let app_connection = AppConnectionImpl::new(manager_config.manager_config.clone());
+
+        let stalwart_config_location = manager_config.stalwart_config.clone();
+
+        let config = std::fs::read_to_string(&stalwart_config_location)?;
+        let config = config.parse::<Document>()?;
+
+        Ok(Self {
+            app_connection,
+            stalwart_config: manager_config,
+            stalwart_config_location,
+            config,
+        })
+    }
     pub fn backup(&self) -> Result<(), StalwartError> {
-        let backup_location = self.config_location.with_extension("bak.toml");
+        let backup_location = self
+            .stalwart_config
+            .stalwart_config
+            .with_extension("bak.toml");
         if backup_location.exists() {
             std::fs::remove_file(&backup_location)?;
         }
-        std::fs::copy(&self.config_location, &backup_location)
+        std::fs::copy(&self.stalwart_config.stalwart_config, &backup_location)
             .map(|_| ())
             .map_err(|e| StalwartError::from(e))
     }
-    pub fn revert_backup(&mut self)  -> Result<(), StalwartError>{
-
-        let backup_location = self.config_location.with_extension("bak.toml");
+    pub fn revert_backup(&mut self) -> Result<(), StalwartError> {
+        let backup_location = self
+            .stalwart_config
+            .stalwart_config
+            .with_extension("bak.toml");
         if backup_location.exists() {
-            std::fs::copy(&backup_location, &self.config_location)
+            std::fs::copy(&backup_location, &self.stalwart_config.stalwart_config)
                 .map(|_| ())
                 .map_err(|e| StalwartError::from(e))?;
+            let config = std::fs::read_to_string(&self.stalwart_config.stalwart_config)?;
+            self.config = config.parse::<Document>()?;
+
             std::fs::remove_file(&backup_location)?;
-        }else{
+        } else {
             warn!("No backup found");
         }
         Ok(())
@@ -73,18 +111,16 @@ impl StalwartManager {
         let config = self.config.to_string();
         self.backup()?;
 
-        std::fs::write(&self.config_location, config)?;
-        if self.app_connection.restart().is_err(){
+        std::fs::write(&self.stalwart_config.stalwart_config, config)?;
+        if self.app_connection.restart().is_err() {
             warn!("Failed to restart app reverting changes");
             self.revert_backup()?;
             return if self.app_connection.restart().is_err() {
                 Err(StalwartError::StalwartCannotStart)
             } else {
                 Err(StalwartError::StalwartDidNotStartAfterChange)
-            }
+            };
         }
         Ok(())
-
-
     }
 }

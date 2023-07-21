@@ -35,7 +35,7 @@ pub struct Model {
     #[sea_orm(primary_key, auto_increment = true)]
     pub id: i64,
     pub account: i64,
-    pub email: String,
+    pub email_address: String,
     #[sea_orm(column_type = "Text")]
     pub email_type: EmailType,
     pub created: DateTimeWithTimeZone,
