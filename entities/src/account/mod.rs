@@ -46,6 +46,7 @@ pub struct Model {
     pub account_type: AccountType,
     #[sea_orm(default = "true")]
     pub active: bool,
+    #[sea_orm(unique)]
     pub backup_email: Option<String>,
     pub created: DateTimeWithTimeZone,
 }

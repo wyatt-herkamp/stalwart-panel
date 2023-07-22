@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(FromQueryResult, Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 pub struct PanelUser {
-    pub id: i32,
+    pub id: i64,
     pub username: String,
     pub password: String,
     pub active: bool,
@@ -21,6 +21,7 @@ pub struct PanelUser {
     // Primary Email
     pub primary_email: Option<String>,
 }
+
 impl PanelUser {
     #[inline]
     async fn get_inner(
@@ -49,6 +50,12 @@ impl PanelUser {
         username: &str,
     ) -> Result<Option<Self>, DbErr> {
         Self::get_inner(connection, AccountColumn::Username.eq(username)).await
+    }
+    pub async fn get_by_backup_email(
+        connection: &impl ConnectionTrait,
+        backup_email: String,
+    ) -> Result<Option<Self>, DbErr> {
+        Self::get_inner(connection, AccountColumn::BackupEmail.eq(backup_email)).await
     }
     pub async fn get_by_id(
         connection: &impl ConnectionTrait,

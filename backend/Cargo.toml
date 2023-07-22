@@ -27,7 +27,6 @@ this_actix_error = { git = "https://github.com/wyatt-herkamp/this_actix_errors.g
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 utils = { path = "../utils" }
-parking_lot = "0.12"
 # CLI
 clap = { version = "4",features = ["derive"] }
 either = "1"
@@ -38,7 +37,18 @@ futures-util = "0.3"
 tracing = "0.1"
 toml = "0.7"
 rand = "0"
+
+#Better STD
+flume = "0.10"
+ahash = "0.8"
+parking_lot = "0.12"
+
 # Web API
 typeshare = "1"
 utoipa = { version="3", features = ["actix_extras"] }
 utoipa-swagger-ui = { version="3", features = ["actix-web"] }
+
+[dependencies.lettre]
+version = "0.10"
+features = ["tracing", "tokio1-rustls-tls", "builder","smtp-transport", "pool" ]
+default-features = false

@@ -1,6 +1,8 @@
 pub mod api;
 pub mod auth;
+pub mod email_service;
 pub mod error;
+pub mod frontend;
 
 use actix_cors::Cors;
 use actix_web::web::Data;
@@ -21,6 +23,7 @@ use utils::stalwart_manager::StalwartManager;
 
 use crate::auth::middleware::HandleSession;
 use crate::auth::session::SessionManager;
+use crate::email_service::EmailService;
 pub use error::WebsiteError as Error;
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -58,18 +61,33 @@ async fn main() -> io::Result<()> {
 
     SessionManager::start_cleaner(session_manager.clone().into_inner(), Duration::hours(1));
 
+    let email = EmailService::start(server_config.email)
+        .await
+        .expect("Failed to start email service")
+        .map(Data::new)
+        .expect("Failed to start email service");
+
     let server = HttpServer::new(move || {
         let cors = Cors::default()
             .allow_any_origin()
             .allow_any_header()
+            .allow_any_method()
             .supports_credentials();
         App::new()
-            .wrap(cors)
             .app_data(database.clone())
             .app_data(stalwart_manager.clone())
             .app_data(session_manager.clone())
-            .service(Scope::new("/api").wrap(HandleSession(session_manager.clone())))
-            .configure(api::accounts::init)
+            .app_data(email.clone())
+            .wrap(cors)
+            .service(
+                Scope::new("/api")
+                    .wrap(HandleSession(session_manager.clone()))
+                    .service(Scope::new("/accounts").configure(api::accounts::init)),
+            )
+            .service(
+                Scope::new("/frontend")
+                    .service(Scope::new("/backend").configure(frontend::api::init)),
+            )
     });
 
     let server = if let Some(tls) = server_config.tls {

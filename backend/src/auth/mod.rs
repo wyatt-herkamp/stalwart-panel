@@ -1,6 +1,7 @@
 //pub mod middleware;
 
 pub mod middleware;
+pub mod password_reset;
 pub mod permissions;
 pub mod session;
 

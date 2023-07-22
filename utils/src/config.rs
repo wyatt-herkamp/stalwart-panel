@@ -85,7 +85,7 @@ pub struct EmailSetting {
     pub host: String,
     pub encryption: EmailEncryption,
     pub from: String,
-    pub port: u16,
+    pub reply_to: Option<String>,
 }
 
 impl Default for EmailSetting {
@@ -93,10 +93,10 @@ impl Default for EmailSetting {
         EmailSetting {
             username: "no-reply@example.com".to_string(),
             password: "".to_string(),
-            host: "example.com".to_string(),
+            host: "example.com:587".to_string(),
             encryption: EmailEncryption::TLS,
             from: "no-reply@example.com".to_string(),
-            port: 587,
+            reply_to: None,
         }
     }
 }
