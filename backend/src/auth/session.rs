@@ -79,7 +79,7 @@ impl SessionManager {
         })
     }
 
-    async fn clean_inner(&self) -> Result<(), SessionError> {
+    pub async fn clean_inner(&self) -> Result<(), SessionError> {
         let sessions = self.sessions.begin_write()?;
 
         let mut table = sessions.open_table(TABLE)?;
@@ -117,7 +117,7 @@ impl SessionManager {
             }
         });
     }
-    fn create_session(&self, user_id: i64, life: Duration) -> Result<Session, SessionError> {
+    pub fn create_session(&self, user_id: i64, life: Duration) -> Result<Session, SessionError> {
         let sessions = self.sessions.begin_write()?;
         let mut session_table = sessions.open_table(TABLE)?;
 
@@ -135,7 +135,7 @@ impl SessionManager {
         Ok(session)
     }
 
-    pub(crate) fn get_session(&self, session_id: &str) -> Result<Option<Session>, SessionError> {
+    pub fn get_session(&self, session_id: &str) -> Result<Option<Session>, SessionError> {
         let sessions = self.sessions.begin_read()?;
 
         let session = sessions.open_table(TABLE)?;

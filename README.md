@@ -13,7 +13,7 @@ An Unofficial Stalwart Panel.
 
 - This is a work in progress.
 - This has a different database structure than Stalwart uses by default. This also does not support Sqlite. 
-
+- All passwords are hashed with Argon2.
 ### To the Stalwart Development Team
 
 If you are interested in adopting this project, please contact me. I would be happy to help you with it.

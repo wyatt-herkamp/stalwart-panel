@@ -22,7 +22,7 @@ use utils::config::{
     Database, EmailEncryption, EmailSetting, MysqlSettings, PostgresSettings, Settings,
     StalwartManagerConfig,
 };
-use utils::password;
+use utils::database::{EmailAddress, Password};
 use utils::stalwart_config::sql::{SQLColumns, SQLQuery};
 use utils::stalwart_manager::ManagerConfig;
 
@@ -118,13 +118,16 @@ async fn main() {
     let email = EmailSetting {
         username: "postmaster".to_string(),
         password,
-        host: stalwart_config["server"]["hostname"]
-            .as_str()
-            .map(|s| s.to_string())
-            .unwrap_or("localhost".to_string()),
+        host: format!(
+            "{}:587",
+            stalwart_config["server"]["hostname"]
+                .as_str()
+                .map(|s| s.to_string())
+                .unwrap_or("localhost".to_string())
+        ),
         encryption: EmailEncryption::StartTLS,
         from: format!("Stalwart Panel<panel@{}>", main_domain),
-        port: 587,
+        reply_to: None,
     };
     update_config(&database_config, stalwart_config, &command.stalwart_config);
 
@@ -274,10 +277,11 @@ async fn create_default_account(database_connection: &mut DatabaseConnection) ->
 
     // Argon2 Hash the password
 
-    let password_hashed = password::encrypt_password(&password).expect("Failed to hash password");
+    let password_hashed = Password::new_argon2(&password).expect("Failed to hash password");
 
     let postmaster = ActiveAccountModel {
         id: Default::default(),
+        name: ActiveValue::Set("Postmaster".to_string()),
         username: ActiveValue::Set("postmaster".to_string()),
         description: ActiveValue::Set("Postmaster Account".to_string()),
         group_id: ActiveValue::Set(2),
@@ -288,25 +292,6 @@ async fn create_default_account(database_connection: &mut DatabaseConnection) ->
         backup_email: Default::default(),
         created: now(),
     };
-
-    let id = AccountEntity::insert(postmaster)
-        .exec(database_connection)
-        .await
-        .expect("Failed to insert postmaster account")
-        .last_insert_id;
-
-    let postmaster_email = ActiveEmailModel {
-        id: Default::default(),
-        email_address: ActiveValue::Set("postmaster@localhost".to_string()),
-        created: now(),
-        account: ActiveValue::Set(id),
-        email_type: ActiveValue::Set(EmailType::Primary),
-    };
-
-    EmailEntity::insert(postmaster_email)
-        .exec(database_connection)
-        .await
-        .expect("Failed to insert postmaster email");
 
     password
 }
@@ -378,10 +363,11 @@ async fn import_database(database: &mut DatabaseConnection, old_database: &str, 
                 username.clone(),
                 ActiveAccountModel {
                     id: Default::default(),
+                    name: ActiveValue::Set(username.clone()),
                     username: ActiveValue::Set(username),
                     description: ActiveValue::Set(description),
                     group_id: ActiveValue::Set(group_id),
-                    password: ActiveValue::Set(password),
+                    password: ActiveValue::Set(Password::new_hashed(password)),
                     quota: ActiveValue::Set(quota),
                     account_type: ActiveValue::Set(account_type),
                     active: ActiveValue::Set(active),
@@ -421,7 +407,7 @@ async fn import_database(database: &mut DatabaseConnection, old_database: &str, 
             let email = ActiveEmailModel {
                 id: Default::default(),
                 account: ActiveValue::Set(id),
-                email_address: ActiveValue::Set(email),
+                email_address: ActiveValue::Set(EmailAddress::new(email).unwrap()),
                 email_type: ActiveValue::Set(email_type),
                 created: now(),
             };

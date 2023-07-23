@@ -18,15 +18,16 @@ rustls-pemfile = "1"
 tokio = { version = "1", features = ["full"] }
 # Database
 entities = { path = "../entities", default-features = false, features = ["actix"] }
-sea-orm = { version = "0.11", features = ["runtime-actix-rustls","macros","sqlx-mysql","sqlx-postgres"] }
-sqlx = "0.6"
+sea-orm = { workspace=true, features = ["runtime-actix-rustls","macros","sqlx-mysql","sqlx-postgres"] }
+sqlx = {workspace=true}
 # Utils
 argon2 = "0.5.0"
 thiserror = "1"
 this_actix_error = { git = "https://github.com/wyatt-herkamp/this_actix_errors.git" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-utils = { path = "../utils" }
+rust-embed = "6"
+utils = { path = "../utils", features = ["sea-orm", "lettre"] }
 # CLI
 clap = { version = "4",features = ["derive"] }
 either = "1"
@@ -37,7 +38,8 @@ futures-util = "0.3"
 tracing = "0.1"
 toml = "0.7"
 rand = "0"
-
+# Templating
+handlebars = { version = "5.0.0-beta.2", features = ["rust-embed"] }
 #Better STD
 flume = "0.10"
 ahash = "0.8"

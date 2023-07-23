@@ -5,6 +5,7 @@ use sea_orm::entity::prelude::*;
 use sea_orm::strum::EnumString;
 
 use serde::{Deserialize, Serialize};
+use utils::database::{EmailAddress, Password};
 
 #[derive(
     EnumIter,
@@ -33,13 +34,14 @@ pub enum AccountType {
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = true)]
     pub id: i64,
+    pub name: String,
     #[sea_orm(unique)]
     pub username: String,
     #[sea_orm(default = "String::new()")]
     pub description: String,
     pub group_id: i64,
     #[serde(skip_serializing)]
-    pub password: String,
+    pub password: Password,
     #[sea_orm(default = "0")]
     pub quota: i64,
     #[sea_orm(default)]
@@ -47,7 +49,7 @@ pub struct Model {
     #[sea_orm(default = "true")]
     pub active: bool,
     #[sea_orm(unique)]
-    pub backup_email: Option<String>,
+    pub backup_email: Option<EmailAddress>,
     pub created: DateTimeWithTimeZone,
 }
 

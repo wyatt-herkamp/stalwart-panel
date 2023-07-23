@@ -12,7 +12,7 @@ toml_edit = "0.19"
 serde = { version = "1.0", features = ["derive"] }
 entities = {path = "../entities"}
 migration = {path = "../migration"}
-utils = {path = "../utils"}
+utils = {path = "../utils", features = ["sea-orm"]}
 sea-orm = { version = "0.11", features = ["runtime-tokio-rustls","macros","sqlx-mysql","sqlx-postgres"] }
 sqlx = { version = "0.6", features = ["sqlite","mysql","postgres", "any"] }
 

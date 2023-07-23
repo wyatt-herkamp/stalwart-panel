@@ -2,6 +2,7 @@ use sea_orm::entity::prelude::*;
 use sea_orm::prelude::DateTimeWithTimeZone;
 use sea_orm::strum::EnumString;
 use serde::{Deserialize, Serialize};
+use utils::database::EmailAddress;
 
 #[derive(
     EnumIter,
@@ -35,7 +36,7 @@ pub struct Model {
     #[sea_orm(primary_key, auto_increment = true)]
     pub id: i64,
     pub account: i64,
-    pub email_address: String,
+    pub email_address: EmailAddress,
     #[sea_orm(column_type = "Text")]
     pub email_type: EmailType,
     pub created: DateTimeWithTimeZone,

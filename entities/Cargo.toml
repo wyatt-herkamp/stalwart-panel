@@ -7,14 +7,16 @@ edition = "2021"
 
 [dependencies]
 serde = { version = "1.0" ,features = ["derive"] }
-sea-orm = { version = "0.11", features = ["macros","sqlx-mysql","sqlx-postgres"] }
-sqlx = "0.6"
+sea-orm = { workspace=true, features = ["macros","sqlx-mysql","sqlx-postgres"] }
+sqlx = { workspace=true}
 serde_json = "1.0.91"
 ahash = "0.8"
 rand = { version = "0.8.5",features=["std_rng"]}
 
 typeshare = "1"
+nutype = "0"
 
+utils = { path = "../utils", features = ["sea-orm"] }
 [features]
 default =["cli"]
 cli = ["sea-orm/runtime-tokio-rustls"]

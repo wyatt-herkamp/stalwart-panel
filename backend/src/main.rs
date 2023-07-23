@@ -22,6 +22,7 @@ use utils::config::Settings;
 use utils::stalwart_manager::StalwartManager;
 
 use crate::auth::middleware::HandleSession;
+use crate::auth::password_reset::PasswordResetManager;
 use crate::auth::session::SessionManager;
 use crate::email_service::EmailService;
 pub use error::WebsiteError as Error;
@@ -67,6 +68,10 @@ async fn main() -> io::Result<()> {
         .map(Data::new)
         .expect("Failed to start email service");
 
+    let password_reset = Data::new(PasswordResetManager {
+        email_access: email.clone().into_inner(),
+        requests: Default::default(),
+    });
     let server = HttpServer::new(move || {
         let cors = Cors::default()
             .allow_any_origin()
@@ -78,6 +83,7 @@ async fn main() -> io::Result<()> {
             .app_data(stalwart_manager.clone())
             .app_data(session_manager.clone())
             .app_data(email.clone())
+            .app_data(password_reset.clone())
             .wrap(cors)
             .service(
                 Scope::new("/api")

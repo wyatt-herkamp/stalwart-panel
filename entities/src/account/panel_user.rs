@@ -2,24 +2,31 @@ use super::{Column as AccountColumn, Entity as AccountEntity, Relation as Accoun
 use crate::emails::{Column as EmailColumn, EmailType};
 use crate::groups::{Column as GroupColumn, GroupPermissions};
 
+use crate::ActiveAccountModel;
 use sea_orm::prelude::*;
 use sea_orm::sea_query::SimpleExpr;
-use sea_orm::{FromQueryResult, JoinType, QuerySelect};
+use sea_orm::ActiveValue::Unchanged;
+use sea_orm::{FromQueryResult, IntoActiveModel, JoinType, QuerySelect};
 use serde::{Deserialize, Serialize};
+use utils::database::{EmailAddress, Password};
 
 #[derive(FromQueryResult, Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 pub struct PanelUser {
     pub id: i64,
+    pub name: String,
     pub username: String,
-    pub password: String,
+    #[serde(skip_serializing)]
+    pub password: Password,
     pub active: bool,
-    pub backup_email: Option<String>,
+    pub backup_email: Option<EmailAddress>,
     // Group Details
-    pub group_id: i32,
+    pub group_id: i64,
     pub group_name: String,
     pub group_permissions: GroupPermissions,
     // Primary Email
-    pub primary_email: Option<String>,
+    pub primary_email: Option<EmailAddress>,
+
+    pub created: DateTimeWithTimeZone,
 }
 
 impl PanelUser {
@@ -62,5 +69,21 @@ impl PanelUser {
         id: i64,
     ) -> Result<Option<Self>, DbErr> {
         Self::get_inner(connection, AccountColumn::Id.eq(id)).await
+    }
+}
+
+impl IntoActiveModel<ActiveAccountModel> for PanelUser {
+    fn into_active_model(self) -> ActiveAccountModel {
+        ActiveAccountModel {
+            id: Unchanged(self.id),
+            name: Unchanged(self.name),
+            username: Unchanged(self.username),
+            password: Unchanged(self.password),
+            active: Unchanged(self.active),
+            backup_email: Unchanged(self.backup_email),
+            group_id: Unchanged(self.group_id),
+            created: Unchanged(self.created),
+            ..Default::default()
+        }
     }
 }

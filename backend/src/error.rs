@@ -4,6 +4,7 @@ use sea_orm::DbErr;
 use serde::ser::SerializeStruct;
 use serde::Serialize;
 
+use crate::auth::session::SessionError;
 use this_actix_error::ActixError;
 use thiserror::Error;
 
@@ -15,7 +16,14 @@ pub enum WebsiteError {
     #[error("Database Error")]
     DatabaseError(Either<DbErr, sqlx::Error>),
     #[error("Unauthorized")]
+    #[status_code(UNAUTHORIZED)]
     Unauthorized,
+    #[error("Bad Request: {0}")]
+    #[status_code(BAD_REQUEST)]
+    BadRequest(&'static str),
+    #[error("Internal Error: {0}")]
+    #[status_code(INTERNAL_SERVER_ERROR)]
+    SessionError(#[from] SessionError),
 }
 
 /// Implemented for responses that can partially fail.

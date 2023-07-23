@@ -5,3 +5,8 @@ members = [
     "migration",
     "setup-tool",
 "backend"]
+
+
+[workspace.dependencies]
+sea-orm = "0.11.3"
+sqlx = "0.6"

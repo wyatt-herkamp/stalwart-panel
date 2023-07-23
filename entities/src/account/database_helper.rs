@@ -4,6 +4,7 @@ use crate::{AccountEntity, AccountModel, EmailEntity, EmailModel};
 use sea_orm::prelude::*;
 use sea_orm::{FromQueryResult, JoinType, QuerySelect};
 use serde::{Deserialize, Serialize};
+use utils::database::EmailAddress;
 
 pub type AccountWithEmails = (AccountModel, Vec<EmailModel>);
 use crate::emails::Column as EmailColumn;
@@ -33,7 +34,7 @@ pub struct AccountSimple {
     pub username: String,
     pub description: String,
     pub account_type: AccountType,
-    pub primary_email: Option<String>,
+    pub primary_email: Option<EmailAddress>,
 }
 impl AccountSimple {
     /// Get all accounts active or not
