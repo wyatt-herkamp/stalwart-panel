@@ -24,6 +24,9 @@ pub enum WebsiteError {
     #[error("Internal Error: {0}")]
     #[status_code(INTERNAL_SERVER_ERROR)]
     SessionError(#[from] SessionError),
+    #[error("Not Found")]
+    #[status_code(NOT_FOUND)]
+    NotFound,
 }
 
 /// Implemented for responses that can partially fail.

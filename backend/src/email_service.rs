@@ -125,9 +125,9 @@ impl EmailService {
         }))
     }
 
-    async fn run(mut self) {
+    async fn run(self) {
         let mut connection = self.transport;
-        let mut queue = self.queue;
+        let queue = self.queue;
         while let Ok(value) = queue.recv_async().await {
             Self::send_email(&mut connection, value).await;
         }

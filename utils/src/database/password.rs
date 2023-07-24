@@ -58,7 +58,6 @@ pub struct Password {
     pub(crate) password: String,
     pub(crate) hash_type: PasswordHash,
 }
-
 impl Debug for Password {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Password")
@@ -102,14 +101,14 @@ impl Password {
     fn check_sha512_crypt(&self, password: impl AsRef<str>) -> Result<bool, PasswordErrors> {
         return match sha_crypt::sha512_check(password.as_ref(), &self.password) {
             Ok(_) => Ok(true),
-            Err(e) => Ok(false),
+            Err(_e) => Ok(false),
         };
     }
 
     fn check_sha256_crypt(&self, password: impl AsRef<str>) -> Result<bool, PasswordErrors> {
         match sha_crypt::sha256_check(password.as_ref(), &self.password) {
             Ok(_) => Ok(true),
-            Err(e) => Ok(false),
+            Err(_e) => Ok(false),
         }
     }
 

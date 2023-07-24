@@ -17,6 +17,7 @@ pub struct PanelUser {
     pub username: String,
     #[serde(skip_serializing)]
     pub password: Password,
+    pub require_password_change: bool,
     pub active: bool,
     pub backup_email: Option<EmailAddress>,
     // Group Details

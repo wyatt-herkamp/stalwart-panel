@@ -1,4 +1,5 @@
 pub mod database_helper;
+pub mod full_user;
 pub mod panel_user;
 
 use sea_orm::entity::prelude::*;
@@ -42,6 +43,8 @@ pub struct Model {
     pub group_id: i64,
     #[serde(skip_serializing)]
     pub password: Password,
+    #[sea_orm(default = "false")]
+    pub require_password_change: bool,
     #[sea_orm(default = "0")]
     pub quota: i64,
     #[sea_orm(default)]

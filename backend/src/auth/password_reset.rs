@@ -1,17 +1,18 @@
 use crate::email_service::{Email, EmailAccess, EmailDebug};
 use ahash::HashSet;
 use chrono::{DateTime, Local};
-use entities::account::panel_user::PanelUser;
 use parking_lot::Mutex;
 use rand::distributions::Distribution;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+use utils::database::EmailAddress;
 
 #[derive(Debug, Serialize)]
 pub struct PasswordResetEmail<'a> {
     pub token: &'a str,
     pub panel_url: &'a str,
     pub username: String,
+    pub required: bool,
 }
 impl Email for PasswordResetEmail<'_> {
     fn template() -> &'static str {
@@ -44,20 +45,28 @@ pub struct PasswordResetManager {
 }
 
 impl PasswordResetManager {
-    pub fn request(&self, user: PanelUser, panel_url: &str) {
+    pub fn request(
+        &self,
+        username: String,
+        id: i64,
+        email: EmailAddress,
+        panel_url: impl AsRef<str>,
+        required: bool,
+    ) {
         let token = self.generate_token();
         self.email_access.send_one_fn(
-            user.backup_email.unwrap(),
+            email,
             PasswordResetEmail {
                 token: &token,
-                panel_url: &panel_url,
-                username: user.username,
+                panel_url: panel_url.as_ref(),
+                username,
+                required,
             },
         );
 
         let mut guard = self.requests.lock();
         let request = PasswordResetRequest {
-            account_id: user.id,
+            account_id: id,
             token,
             created: Local::now(),
         };

@@ -3,6 +3,7 @@ pub mod auth;
 pub mod email_service;
 pub mod error;
 pub mod frontend;
+pub mod headers;
 
 use actix_cors::Cors;
 use actix_web::web::Data;
@@ -39,6 +40,7 @@ pub type DatabaseConnection = Data<sea_orm::DatabaseConnection>;
 /// Mutex's are slightly faster than RwLocks and we don't really need to have multiple readers
 /// This could be changed in the future if we need to have multiple readers
 pub type SlalwartManager = Data<Mutex<StalwartManager>>;
+
 #[actix_web::main]
 async fn main() -> io::Result<()> {
     let command = Command::parse();

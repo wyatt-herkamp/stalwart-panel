@@ -1,15 +1,16 @@
 use crate::auth::password_reset::PasswordResetManager;
 use crate::auth::session::{Session, SessionManager};
-use crate::email_service::EmailAccess;
+
+use crate::headers::Origin;
 use crate::Result;
 use crate::{DatabaseConnection, Error};
-use actix_web::cookie::{Cookie, CookieBuilder, Expiration, SameSite};
-use actix_web::http::header::ORIGIN;
+use actix_web::cookie::{CookieBuilder, Expiration, SameSite};
+
 use actix_web::web::{Data, ServiceConfig};
-use actix_web::{get, post, web, HttpRequest, HttpResponse};
+use actix_web::{get, post, web, HttpResponse};
 use chrono::Duration;
 use entities::account::panel_user::PanelUser;
-use entities::{account, AccountEntity};
+use entities::AccountEntity;
 use sea_orm::prelude::*;
 use sea_orm::{ActiveValue, IntoActiveModel};
 use serde::{Deserialize, Serialize};
@@ -83,22 +84,20 @@ pub async fn request_password_reset(
     post: web::Form<PasswordReset>,
     database: DatabaseConnection,
     password_reset: Data<PasswordResetManager>,
-    request: HttpRequest,
+    origin: Origin,
 ) -> Result<HttpResponse> {
     let Some(panel_user) = PanelUser::get_by_backup_email(database.as_ref(), post.into_inner().backup_email)
         .await?else {
             return Ok(HttpResponse::NoContent().finish());
     };
 
-    let origin = request
-        .headers()
-        .get(ORIGIN)
-        .ok_or(Error::BadRequest("Missing Origin"))?;
-    let origin = origin
-        .to_str()
-        .map_err(|_| Error::BadRequest("Invalid Origin"))?;
-
-    password_reset.request(panel_user, origin);
+    password_reset.request(
+        panel_user.username,
+        panel_user.id,
+        panel_user.backup_email.unwrap(),
+        origin,
+        false,
+    );
 
     Ok(HttpResponse::NoContent().finish())
 }
@@ -109,7 +108,7 @@ pub async fn verify_password_reset(
     password_reset: Data<PasswordResetManager>,
 ) -> HttpResponse {
     if password_reset.get_request(get.as_ref()).is_some() {
-        HttpResponse::Ok().finish()
+        HttpResponse::NoContent().finish()
     } else {
         HttpResponse::NotFound().finish()
     }
@@ -136,6 +135,7 @@ pub async fn submit_password_reset(
             warn!("Failed to find account with id {}", value.account_id);
             return Ok(HttpResponse::NotFound().finish());
         };
+        user_model.require_password_change = ActiveValue::set(false);
         user_model.password = ActiveValue::set(Password::new_argon2(password).map_err(|e| {
             warn!("Failed to hash password: {}", e);
             Error::BadRequest("Failed to hash password")
@@ -146,7 +146,7 @@ pub async fn submit_password_reset(
             .await?;
 
         password_reset.remove_request(&value);
-        Ok(HttpResponse::Ok().finish())
+        Ok(HttpResponse::NoContent().finish())
     } else {
         Ok(HttpResponse::NotFound().finish())
     }

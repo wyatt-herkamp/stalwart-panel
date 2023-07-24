@@ -286,12 +286,18 @@ async fn create_default_account(database_connection: &mut DatabaseConnection) ->
         description: ActiveValue::Set("Postmaster Account".to_string()),
         group_id: ActiveValue::Set(2),
         password: ActiveValue::Set(password_hashed),
+        require_password_change: ActiveValue::Set(false),
         quota: ActiveValue::Set(0),
         account_type: ActiveValue::Set(AccountType::Individual),
         active: ActiveValue::Set(true),
         backup_email: Default::default(),
         created: now(),
     };
+    AccountEntity::insert(
+        postmaster
+    ).exec(
+        database_connection
+    ).await.expect("Failed to insert postmaster account");
 
     password
 }
@@ -368,6 +374,7 @@ async fn import_database(database: &mut DatabaseConnection, old_database: &str, 
                     description: ActiveValue::Set(description),
                     group_id: ActiveValue::Set(group_id),
                     password: ActiveValue::Set(Password::new_hashed(password)),
+                    require_password_change: ActiveValue::Set(false),
                     quota: ActiveValue::Set(quota),
                     account_type: ActiveValue::Set(account_type),
                     active: ActiveValue::Set(active),
