@@ -2,6 +2,7 @@ pub mod account;
 pub mod emails;
 pub mod groups;
 
+use chrono::Local;
 pub use account::{
     ActiveModel as ActiveAccountModel, Entity as AccountEntity, Model as AccountModel,
 };
@@ -12,5 +13,5 @@ use sea_orm::ActiveValue;
 
 /// Returns an ActiveValue with the current time.
 pub fn now() -> ActiveValue<DateTimeWithTimeZone> {
-    ActiveValue::set(DateTimeWithTimeZone::default())
+    ActiveValue::set(DateTimeWithTimeZone::from(Local::now()))
 }

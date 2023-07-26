@@ -15,7 +15,7 @@ rand = { version = "0.8.5",features=["std_rng"]}
 strum = {workspace=true}
 strum_macros =  {workspace=true}
 typeshare = "1"
-
+chrono = "0.4"
 utils = { path = "../utils", features = ["sea-orm"] }
 [features]
 default =["cli"]

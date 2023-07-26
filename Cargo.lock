@@ -941,6 +941,7 @@ name = "entities"
 version = "0.1.0"
 dependencies = [
  "ahash 0.8.3",
+ "chrono",
  "rand",
  "sea-orm",
  "serde",

@@ -50,7 +50,7 @@ pub mod linux_connection {
             }
         }
     }
-
+    #[derive(Debug)]
     pub struct LinuxConnection {
         pub service_path: String,
         pub systemctl_path: String,

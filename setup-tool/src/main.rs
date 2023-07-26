@@ -11,8 +11,10 @@ use rand::distributions::Distribution;
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 use sea_orm::sea_query::OnConflict;
-use sea_orm::{ActiveValue, ConnectOptions, DatabaseConnection, EntityTrait};
-use sqlx::{AnyConnection, Connection};
+use sea_orm::{ActiveValue, ConnectOptions, ConnectionTrait, DatabaseConnection, EntityTrait};
+use sqlx::database::HasValueRef;
+use sqlx::error::BoxDynError;
+use sqlx::{Any, AnyConnection, Connection, Decode, SqliteConnection};
 use std::collections::HashMap;
 use std::fs::read_to_string;
 use std::path::PathBuf;
@@ -52,6 +54,7 @@ struct Command {
 #[tokio::main]
 async fn main() {
     let command = Command::parse();
+    sqlx::any::install_default_drivers();
     let toml_content =
         read_to_string(&command.stalwart_config).expect("Failed to read stalwart config file");
 
@@ -315,24 +318,18 @@ type OldAccount = (String, String, String, String, i64, bool);
 /// - Address
 /// - Type
 type OldEmail = (String, String, String);
-
-/// Imports the Default Stalwart Database to the new database
-///
-/// ## Notes
-///  - We do not support a user being in multiple groups. And it defaults everyone to the user group unless they are a superuser
-///  - This method fails however the old database is not modified. So if something happens just drop the new database and re run it
-///  - Email Types Supported are Primary and Alias
-///  - Account Types Supported are Individual(Will convert Personal to Individual) and Group
-async fn import_database(database: &mut DatabaseConnection, old_database: &str, superuser: &str) {
-    info!("Loading Old Database");
-    let mut old_database = AnyConnection::connect(old_database)
+async fn get_old_data_sqlite(
+    old_database: &str,
+) -> (Vec<OldAccount>, Vec<(String, String)>, Vec<OldEmail>) {
+    let mut old_database = SqliteConnection::connect(old_database)
         .await
         .expect("Failed to connect to old database");
-    info!("Loading Old Database Tables");
+
     let old_accounts: Vec<OldAccount> = sqlx::query_as("SELECT * FROM accounts")
         .fetch_all(&mut old_database)
         .await
         .expect("Failed to fetch accounts");
+
     debug!("Found {} Accounts", old_accounts.len());
     let group_members: Vec<(String, String)> = sqlx::query_as("SELECT * FROM group_members")
         .fetch_all(&mut old_database)
@@ -344,6 +341,25 @@ async fn import_database(database: &mut DatabaseConnection, old_database: &str, 
         .await
         .expect("Failed to fetch emails");
     debug!("Found {} Emails", old_emails.len());
+
+    (old_accounts, group_members, old_emails)
+}
+/// Imports the Default Stalwart Database to the new database
+///
+/// ## Notes
+///  - We do not support a user being in multiple groups. And it defaults everyone to the user group unless they are a superuser
+///  - This method fails however the old database is not modified. So if something happens just drop the new database and re run it
+///  - Email Types Supported are Primary and Alias
+///  - Account Types Supported are Individual(Will convert Personal to Individual) and Group
+async fn import_database(database: &mut DatabaseConnection, old_database: &str, superuser: &str) {
+    info!("Loading Old Database");
+
+    let (old_accounts, group_members, old_emails) = if old_database.contains("sqlite") {
+        get_old_data_sqlite(old_database).await
+    }else{
+        todo!("Add support for other databases")
+    };
+
     // Stalwart allows users to be apart of multiple groups, but we don't support that yet
     // By default this is going to make anyone with a superuser group a superuser. Then everyone else default
     // Stalwart is not production ready so I doubt anyone has some massive user base with multiple groups
