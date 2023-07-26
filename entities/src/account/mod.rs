@@ -3,22 +3,23 @@ pub mod full_user;
 pub mod panel_user;
 
 use sea_orm::entity::prelude::*;
-use sea_orm::strum::EnumString;
 
 use serde::{Deserialize, Serialize};
+use strum_macros::{Display, EnumIter, EnumString};
 use utils::database::{EmailAddress, Password};
 
 #[derive(
-    EnumIter,
     DeriveActiveEnum,
     Clone,
     Debug,
     PartialEq,
     Eq,
+    Default,
     Deserialize,
     Serialize,
-    Default,
     EnumString,
+    Display,
+    EnumIter,
 )]
 #[sea_orm(rs_type = "String", db_type = "Text")]
 pub enum AccountType {
@@ -30,7 +31,7 @@ pub enum AccountType {
     Group,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel, Serialize)]
 #[sea_orm(table_name = "accounts")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = true)]
@@ -47,11 +48,11 @@ pub struct Model {
     pub require_password_change: bool,
     #[sea_orm(default = "0")]
     pub quota: i64,
-    #[sea_orm(default)]
+    #[sea_orm(default_value = "Individual")]
     pub account_type: AccountType,
     #[sea_orm(default = "true")]
     pub active: bool,
-    #[sea_orm(unique)]
+    #[sea_orm(unique, nullable)]
     pub backup_email: Option<EmailAddress>,
     pub created: DateTimeWithTimeZone,
 }

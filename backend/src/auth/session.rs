@@ -145,7 +145,7 @@ impl SessionManager {
         Ok(session)
     }
 
-    fn delete_session(&self, session_id: &str) -> Result<Option<Session>, SessionError> {
+    pub fn delete_session(&self, session_id: &str) -> Result<Option<Session>, SessionError> {
         let sessions = self.sessions.begin_write()?;
         let mut table = sessions.open_table(TABLE)?;
         let session = table

@@ -1,55 +1,16 @@
 use super::{Column as AccountColumn, Entity as AccountEntity, Relation as AccountRelation};
 use crate::account::AccountType;
-use crate::emails::{Column as EmailColumn, EmailType};
+use crate::emails::{Column as EmailColumn, EmailType, Emails};
 use crate::groups::{Column as GroupColumn, GroupPermissions};
 use crate::{EmailEntity, EmailModel};
 use sea_orm::prelude::*;
 use sea_orm::sea_query::SimpleExpr;
-use sea_orm::{ColIdx, FromQueryResult, JoinType, QuerySelect, TryGetError, TryGetable};
+use sea_orm::{JoinType, QuerySelect, TryGetable};
 use serde::{Deserialize, Serialize};
-use std::ops::Deref;
+use std::ops::{Deref, DerefMut};
 use utils::database::EmailAddress;
 
-#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize, Default)]
-pub struct Emails(Vec<EmailModel>);
-impl Emails {
-    pub fn is_empty(&self) -> bool {
-        self.0.is_empty()
-    }
-    pub fn get_primary(&self) -> Option<&EmailModel> {
-        self.0.iter().find(|e| e.email_type == EmailType::Primary)
-    }
-    pub fn get_aliases(&self) -> Vec<&EmailModel> {
-        self.0
-            .iter()
-            .filter(|e| e.email_type == EmailType::Alias)
-            .collect()
-    }
-    pub fn get_lists(&self) -> Vec<&EmailModel> {
-        self.0
-            .iter()
-            .filter(|e| e.email_type == EmailType::List)
-            .collect()
-    }
-    pub fn into_inner(self) -> Vec<EmailModel> {
-        self.0
-    }
-}
-
-impl Deref for Emails {
-    type Target = Vec<EmailModel>;
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl From<Vec<EmailModel>> for Emails {
-    fn from(v: Vec<EmailModel>) -> Self {
-        Self(v)
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct FullUser {
     pub id: i64,
     pub name: String,
@@ -109,11 +70,7 @@ impl FullUser {
     ) -> Result<Option<Self>, DbErr> {
         let raw = Self::get_user(connection, filter).await?;
         if let Some(mut raw) = raw {
-            let all_emails = EmailEntity::find()
-                .filter(EmailColumn::Account.eq(raw.id))
-                .all(connection)
-                .await?;
-            raw.emails = Emails(all_emails);
+            raw.emails = Emails::get_by_user_id(connection, raw.id).await?;
             Ok(Some(raw))
         } else {
             Ok(None)

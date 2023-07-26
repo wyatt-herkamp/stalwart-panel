@@ -90,11 +90,15 @@ async fn main() -> io::Result<()> {
             .service(
                 Scope::new("/api")
                     .wrap(HandleSession(session_manager.clone()))
-                    .service(Scope::new("/accounts").configure(api::accounts::init)),
-            )
-            .service(
-                Scope::new("/frontend")
-                    .service(Scope::new("/backend").configure(frontend::api::init)),
+                    .service(
+                        Scope::new("/emails")
+                            .configure(api::emails::init)
+                            .service(Scope::new("/accounts").configure(api::accounts::init)),
+                    )
+                    .service(
+                        Scope::new("/frontend")
+                            .service(Scope::new("/backend").configure(frontend::api::init)),
+                    ),
             )
     });
 

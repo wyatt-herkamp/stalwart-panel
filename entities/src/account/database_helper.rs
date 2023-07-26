@@ -1,12 +1,12 @@
 use crate::account::AccountType;
-use crate::emails::EmailType;
+use crate::emails::{EmailType, Emails};
 use crate::{AccountEntity, AccountModel, EmailEntity, EmailModel};
 use sea_orm::prelude::*;
 use sea_orm::{FromQueryResult, JoinType, QuerySelect};
 use serde::{Deserialize, Serialize};
 use utils::database::EmailAddress;
 
-pub type AccountWithEmails = (AccountModel, Vec<EmailModel>);
+pub type AccountWithEmails = (AccountModel, Emails);
 use crate::emails::Column as EmailColumn;
 
 pub async fn get_account_with_associated_emails_by_id(
@@ -15,11 +15,10 @@ pub async fn get_account_with_associated_emails_by_id(
 ) -> Result<Option<AccountWithEmails>, DbErr> {
     let account = AccountEntity::find_by_id(id).one(connection).await?;
     if let Some(account) = account {
-        let emails = EmailEntity::find()
-            .filter(EmailColumn::Account.eq(id))
-            .all(connection)
-            .await?;
-        Ok(Some((account, emails)))
+        Ok(Some((
+            account,
+            Emails::get_by_user_id(connection, id).await?,
+        )))
     } else {
         Ok(None)
     }

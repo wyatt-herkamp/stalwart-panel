@@ -1,20 +1,26 @@
+mod database_helper;
+mod emails_type;
+
+pub use emails_type::Emails;
 use sea_orm::entity::prelude::*;
 use sea_orm::prelude::DateTimeWithTimeZone;
-use sea_orm::strum::EnumString;
 use serde::{Deserialize, Serialize};
+use strum_macros::{Display, EnumString};
 use utils::database::EmailAddress;
 
 #[derive(
-    EnumIter,
     DeriveActiveEnum,
     Clone,
+    Copy,
     Debug,
     PartialEq,
     Eq,
+    Default,
     Deserialize,
     Serialize,
-    Default,
     EnumString,
+    Display,
+    EnumIter,
 )]
 #[sea_orm(rs_type = "String", db_type = "Text")]
 pub enum EmailType {
@@ -30,7 +36,7 @@ pub enum EmailType {
     List,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel, Serialize)]
 #[sea_orm(table_name = "emails")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = true)]

@@ -7,7 +7,7 @@ use crate::{DatabaseConnection, Error};
 use actix_web::cookie::{CookieBuilder, Expiration, SameSite};
 
 use actix_web::web::{Data, ServiceConfig};
-use actix_web::{get, post, web, HttpResponse};
+use actix_web::{get, post, web, HttpRequest, HttpResponse};
 use chrono::Duration;
 use entities::account::panel_user::PanelUser;
 use entities::AccountEntity;
@@ -36,7 +36,20 @@ pub struct LoginResponse {
     panel_user: PanelUser,
     session: Session,
 }
+#[get("/logout")]
+pub async fn logout(
+    session_manager: Data<SessionManager>,
+    http_request: HttpRequest,
+) -> Result<HttpResponse> {
+    if let Some(session_id) = http_request
+        .cookie("session")
+        .map(|v| v.value().to_string())
+    {
+        session_manager.as_ref().delete_session(&session_id)?;
+    }
 
+    Ok(HttpResponse::NoContent().finish())
+}
 #[post("/login")]
 pub async fn login(
     post: web::Form<LoginRequest>,
@@ -141,11 +154,11 @@ pub async fn submit_password_reset(
             Error::BadRequest("Failed to hash password")
         })?);
 
+        drop(value);
+        password_reset.remove_request(get.as_ref());
         AccountEntity::update(user_model)
             .exec(database.as_ref())
             .await?;
-
-        password_reset.remove_request(&value);
         Ok(HttpResponse::NoContent().finish())
     } else {
         Ok(HttpResponse::NotFound().finish())

@@ -53,6 +53,7 @@ impl PasswordHash {
         }
     }
 }
+
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Password {
     pub(crate) password: String,
@@ -238,7 +239,7 @@ mod _serde {
             S: serde::Serializer,
         {
             warn!("Something is trying to serialize a password! Please report this!");
-            serializer.serialize_str("REDACTED")
+            serializer.serialize_none()
         }
     }
 

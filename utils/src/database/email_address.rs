@@ -1,5 +1,6 @@
 use std::fmt::Display;
 
+use serde::Serialize;
 use std::ops::Deref;
 use std::str::FromStr;
 use thiserror::Error;
@@ -9,9 +10,18 @@ use thiserror::Error;
 pub struct InvalidEmailAddress;
 
 /// A newtype wrapper around a String that represents an email address
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize)]
 pub struct EmailAddress(String);
-
+impl PartialEq<String> for EmailAddress {
+    fn eq(&self, other: &String) -> bool {
+        self.0 == *other
+    }
+}
+impl PartialEq<&str> for EmailAddress {
+    fn eq(&self, other: &&str) -> bool {
+        self.0 == *other
+    }
+}
 impl EmailAddress {
     pub fn new(email_address: impl Into<String>) -> Result<Self, InvalidEmailAddress> {
         let email_address: String = email_address.into();
@@ -54,15 +64,6 @@ mod tests {
 }
 mod _serde {
     use crate::database::EmailAddress;
-
-    impl serde::Serialize for EmailAddress {
-        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: serde::Serializer,
-        {
-            serializer.serialize_str(&self.0)
-        }
-    }
 
     impl<'de> serde::Deserialize<'de> for EmailAddress {
         fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>

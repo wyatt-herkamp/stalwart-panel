@@ -37,7 +37,7 @@ pub mod none {
 pub mod linux_connection {
     use super::AppConnection;
     use serde::{Deserialize, Serialize};
-    #[derive(Debug, Deserialize, Serialize)]
+    #[derive(Debug, Deserialize, Serialize, Clone)]
     pub struct LinuxConnectionConfig {
         pub service_path: String,
         pub systemctl_path: String,
@@ -51,7 +51,6 @@ pub mod linux_connection {
         }
     }
 
-    #[derive(Debug)]
     pub struct LinuxConnection {
         pub service_path: String,
         pub systemctl_path: String,

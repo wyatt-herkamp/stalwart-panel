@@ -13,8 +13,8 @@ serde = { version = "1.0", features = ["derive"] }
 entities = {path = "../entities"}
 migration = {path = "../migration"}
 utils = {path = "../utils", features = ["sea-orm"]}
-sea-orm = { version = "0.11", features = ["runtime-tokio-rustls","macros","sqlx-mysql","sqlx-postgres"] }
-sqlx = { version = "0.6", features = ["sqlite","mysql","postgres", "any"] }
+sea-orm = { workspace=true, features = ["runtime-tokio-rustls","macros","sqlx-mysql","sqlx-postgres"] }
+sqlx = { workspace=true, features = ["sqlite","mysql","postgres", "any"] }
 
 clap = { version = "4",features = ["derive"] }
 log = "0.4"

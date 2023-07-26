@@ -14,6 +14,7 @@ pub enum WebsiteError {
     #[status_code(INTERNAL_SERVER_ERROR)]
     IoError(#[from] std::io::Error),
     #[error("Database Error")]
+    #[status_code(INTERNAL_SERVER_ERROR)]
     DatabaseError(Either<DbErr, sqlx::Error>),
     #[error("Unauthorized")]
     #[status_code(UNAUTHORIZED)]

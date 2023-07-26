@@ -3,7 +3,7 @@ use entities::account::AccountType;
 use entities::emails::EmailType;
 use entities::groups::{ActiveModel, GroupPermissions};
 use entities::{
-    now, AccountEntity, ActiveAccountModel, ActiveEmailModel, EmailEntity, GroupEntity,
+    now, AccountEntity, ActiveAccountModel, EmailActiveModel, EmailEntity, GroupEntity,
 };
 use log::{debug, error, info};
 use migration::{Migrator, MigratorTrait};
@@ -293,11 +293,10 @@ async fn create_default_account(database_connection: &mut DatabaseConnection) ->
         backup_email: Default::default(),
         created: now(),
     };
-    AccountEntity::insert(
-        postmaster
-    ).exec(
-        database_connection
-    ).await.expect("Failed to insert postmaster account");
+    AccountEntity::insert(postmaster)
+        .exec(database_connection)
+        .await
+        .expect("Failed to insert postmaster account");
 
     password
 }
@@ -411,7 +410,7 @@ async fn import_database(database: &mut DatabaseConnection, old_database: &str, 
         for (email, email_type) in collected_emails {
             debug!("Inserting Email {} for Account {}", email, name);
 
-            let email = ActiveEmailModel {
+            let email = EmailActiveModel {
                 id: Default::default(),
                 account: ActiveValue::Set(id),
                 email_address: ActiveValue::Set(EmailAddress::new(email).unwrap()),

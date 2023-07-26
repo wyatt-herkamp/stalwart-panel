@@ -1,9 +1,11 @@
 use crate::email_service::{Email, EmailAccess, EmailDebug};
-use ahash::HashSet;
+use ahash::{HashMap, HashSet};
 use chrono::{DateTime, Local};
-use parking_lot::Mutex;
+use parking_lot::lock_api::MappedMutexGuard;
+use parking_lot::{Mutex, MutexGuard, RawMutex};
 use rand::distributions::Distribution;
 use serde::{Deserialize, Serialize};
+use std::ops::DerefMut;
 use std::sync::Arc;
 use utils::database::EmailAddress;
 
@@ -14,6 +16,7 @@ pub struct PasswordResetEmail<'a> {
     pub username: String,
     pub required: bool,
 }
+
 impl Email for PasswordResetEmail<'_> {
     fn template() -> &'static str {
         "password_reset"
@@ -31,7 +34,7 @@ impl Email for PasswordResetEmail<'_> {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct PasswordResetRequest {
     pub account_id: i64,
     pub token: String,
@@ -41,7 +44,7 @@ pub struct PasswordResetRequest {
 #[derive(Debug)]
 pub struct PasswordResetManager {
     pub email_access: Arc<EmailAccess>,
-    pub requests: Mutex<HashSet<PasswordResetRequest>>,
+    pub requests: Mutex<HashMap<String, PasswordResetRequest>>,
 }
 
 impl PasswordResetManager {
@@ -70,16 +73,18 @@ impl PasswordResetManager {
             token,
             created: Local::now(),
         };
-        guard.insert(request.clone());
+        guard.insert(request.token.clone(), request);
     }
 
-    pub fn get_request(&self, token: impl AsRef<str>) -> Option<PasswordResetRequest> {
-        let guard = self.requests.lock();
-        guard.iter().find(|r| r.token == token.as_ref()).cloned()
+    pub fn get_request(
+        &self,
+        token: impl AsRef<str>,
+    ) -> Option<impl DerefMut<Target = PasswordResetRequest> + '_> {
+        MutexGuard::try_map(self.requests.lock(), |mut r| r.get_mut(token.as_ref())).ok()
     }
-    pub fn remove_request(&self, request: &PasswordResetRequest) {
+    pub fn remove_request(&self, request: impl AsRef<str>) {
         let mut guard = self.requests.lock();
-        guard.remove(request);
+        guard.remove(request.as_ref());
     }
 
     fn generate_token(&self) -> String {
