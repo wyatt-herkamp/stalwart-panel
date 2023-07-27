@@ -1,3 +1,4 @@
+use actix_web::http::header::ToStrError;
 use actix_web::ResponseError;
 use either::Either;
 use sea_orm::DbErr;
@@ -39,7 +40,11 @@ impl Serialize for WebsiteError {
         s.end()
     }
 }
-
+impl From<ToStrError> for WebsiteError {
+    fn from(_: ToStrError) -> Self {
+        Self::BadRequest("Unable to parse Value")
+    }
+}
 impl From<DbErr> for WebsiteError {
     fn from(error: DbErr) -> Self {
         Self::DatabaseError(Either::Left(error))

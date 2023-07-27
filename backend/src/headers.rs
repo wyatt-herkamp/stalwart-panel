@@ -1,40 +1,76 @@
-use actix_web::error::ParseError;
-use actix_web::http::header::ORIGIN;
+use std::fmt::Display;
+use crate::{Error, Https};
+use actix_web::http::header::{HOST, ORIGIN};
+use actix_web::web::Data;
 use actix_web::{FromRequest, HttpMessage};
 use std::ops::Deref;
-use tracing::info;
+use serde::Serialize;
+use tracing::{debug};
 
-#[derive(Debug, Clone)]
-pub struct Origin(pub String);
-
-impl AsRef<str> for Origin {
-    fn as_ref(&self) -> &str {
-        &self.0
+#[derive(Debug, Clone, Serialize)]
+pub struct Origin {
+    pub url: String,
+    pub is_https: bool,
+}
+impl Display for Origin {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", &self.url)
     }
 }
-
+impl AsRef<str> for Origin {
+    fn as_ref(&self) -> &str {
+        &self.url
+    }
+}
+impl Into<String> for Origin {
+    fn into(self) -> String {
+        self.url
+    }
+}
 impl Deref for Origin {
     type Target = str;
 
     fn deref(&self) -> &Self::Target {
-        &self.0
+        &self.url
     }
 }
 
+impl Origin {
+    #[inline]
+    fn from_request_inner(req: &actix_web::HttpRequest) -> Result<Self, Error> {
+        let (url, https) = if let Some(value) = req.headers().get(ORIGIN) {
+            value
+                .to_str()
+                .map(|value| (value.to_string(), value.starts_with("https")))?
+        } else if let Some(value) = req.headers().get(HOST) {
+            let https = req
+                .app_data::<Data<Https>>()
+                .map(|v| *v.as_ref().as_ref())
+                .unwrap_or_default();
+            let value = value.to_str()?;
+            let url = if https {
+                format!("https://{}", value)
+            } else {
+                format!("http://{}", value)
+            };
+            (url, https)
+        } else {
+            debug!("No Host or Origin header found");
+            return Err(Error::BadRequest("No Host or Origin header found"));
+        };
+
+        Ok(Origin {
+            url,
+            is_https: https,
+        })
+    }
+}
 impl FromRequest for Origin {
-    type Error = ParseError;
+    type Error = Error;
     type Future = futures_util::future::Ready<Result<Self, Self::Error>>;
 
     fn from_request(req: &actix_web::HttpRequest, _: &mut actix_web::dev::Payload) -> Self::Future {
-        futures_util::future::ready(
-            req.headers()
-                .get(ORIGIN)
-                .ok_or(ParseError::Header)
-                .and_then(|value| {
-                    info!("Bad Origin: {:?}", value);
-                    value.to_str().map_err(|_err| ParseError::Header)
-                })
-                .map(|value| Origin(value.to_string())),
-        )
+        let result = Origin::from_request_inner(req);
+        futures_util::future::ready(result)
     }
 }

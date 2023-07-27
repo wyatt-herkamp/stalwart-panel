@@ -71,7 +71,11 @@ pub struct SessionManager {
 }
 impl SessionManager {
     pub fn new(path: PathBuf) -> Result<Self, Error> {
-        let sessions = Database::open(path)?;
+        let sessions = if path.exists() {
+            Database::open(path)?
+        } else {
+            Database::create(path)?
+        };
 
         Ok(Self {
             sessions,

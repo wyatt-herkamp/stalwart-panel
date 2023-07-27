@@ -7,23 +7,35 @@ use rand::distributions::Distribution;
 use serde::{Deserialize, Serialize};
 use std::ops::DerefMut;
 use std::sync::Arc;
+use tracing::debug;
 use utils::database::EmailAddress;
+use crate::headers::Origin;
 
 #[derive(Debug, Serialize)]
 pub struct PasswordResetEmail<'a> {
     pub token: &'a str,
-    pub panel_url: &'a str,
+    pub panel_origin: Origin,
     pub username: String,
     pub required: bool,
 }
 
 impl Email for PasswordResetEmail<'_> {
     fn template() -> &'static str {
-        "password_reset"
+        "password_reset.html"
     }
 
     fn subject() -> &'static str {
         "Password Reset"
+    }
+
+    fn backup(&self) -> String {
+        let Self {
+            token,
+            panel_origin,
+            username,
+            required,
+        } = self;
+        format!("Reset your password {panel_origin}/reset-password?token={token}")
     }
 
     fn debug_info(self) -> EmailDebug {
@@ -53,7 +65,7 @@ impl PasswordResetManager {
         username: String,
         id: i64,
         email: EmailAddress,
-        panel_url: impl AsRef<str>,
+        panel_origin: Origin,
         required: bool,
     ) {
         let token = self.generate_token();
@@ -61,7 +73,7 @@ impl PasswordResetManager {
             email,
             PasswordResetEmail {
                 token: &token,
-                panel_url: panel_url.as_ref(),
+                panel_origin,
                 username,
                 required,
             },
@@ -74,6 +86,8 @@ impl PasswordResetManager {
             created: Local::now(),
         };
         guard.insert(request.token.clone(), request);
+
+        debug!("{:?}", guard);
     }
 
     pub fn get_request(

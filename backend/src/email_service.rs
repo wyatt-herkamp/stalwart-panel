@@ -1,6 +1,6 @@
 use flume::{Receiver, Sender};
 use handlebars::Handlebars;
-use lettre::message::{Body, MessageBuilder};
+use lettre::message::{header, Body, MessageBuilder, MultiPart, SinglePart};
 use lettre::transport::smtp::authentication::Credentials;
 use lettre::transport::smtp::Error as SmtpError;
 use lettre::{AsyncSmtpTransport, AsyncTransport, Message};
@@ -8,7 +8,7 @@ use rust_embed::RustEmbed;
 use serde::Serialize;
 use std::io;
 use tracing::{debug, info, warn};
-use utils::config::EmailSetting;
+use utils::config::{EmailEncryption, EmailSetting};
 use utils::database::EmailAddress;
 
 #[derive(RustEmbed)]
@@ -38,6 +38,8 @@ pub trait Email: Serialize {
 
     fn subject() -> &'static str;
 
+    fn backup(&self) -> String;
+
     fn debug_info(self) -> EmailDebug;
 }
 #[derive(Debug)]
@@ -58,11 +60,23 @@ impl EmailAccess {
         &self.email_handlebars
     }
     #[inline]
-    pub fn build_body<E: Email>(&self, data: &E) -> Body {
-        self.email_handlebars
+    pub fn build_body<E: Email>(&self, data: &E) -> MultiPart {
+        let html = self
+            .email_handlebars
             .render(E::template(), &data)
-            .map(|e| Body::new(e))
-            .expect("Unable to render email body. This is a bug. Please report it.")
+            .expect("Unable to render email body. This is a bug. Please report it.");
+
+        MultiPart::alternative()
+            .singlepart(
+                SinglePart::builder()
+                    .header(header::ContentType::TEXT_PLAIN)
+                    .body(data.backup()),
+            )
+            .singlepart(
+                SinglePart::builder()
+                    .header(header::ContentType::TEXT_HTML)
+                    .body(html),
+            )
     }
     #[inline]
     pub fn prep_builder(&self) -> MessageBuilder {
@@ -74,7 +88,7 @@ impl EmailAccess {
         let message = self
             .prep_builder()
             .to(to.into())
-            .body(body)
+            .multipart(body)
             .expect("Unable to build email");
         self.send(data.debug_info(), message);
     }
@@ -154,13 +168,16 @@ impl EmailService {
         }
     }
     async fn build_connection(email: EmailSetting) -> Result<Option<Transport>, SmtpError> {
-        let transport = Transport::starttls_relay(email.host.as_str())?
-            .credentials(Credentials::new(
-                email.username.clone(),
-                email.password.clone(),
-            ))
-            .build();
-        if transport.test_connection().await? {
+        let credentials = Credentials::new(email.username.clone(), email.password.clone());
+        let transport = match email.encryption {
+            EmailEncryption::StartTLS => Transport::starttls_relay(email.host.as_str())?
+                .credentials(credentials)
+                .build(),
+            _ => Transport::relay(email.host.as_str())?
+                .credentials(credentials)
+                .build(),
+        };
+        if !transport.test_connection().await? {
             warn!("Email Transport Test Connection Failed");
             warn!("Please ensure that stalwart has already been configured");
             return Ok(None);

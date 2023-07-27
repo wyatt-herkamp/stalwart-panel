@@ -109,6 +109,9 @@ pub struct Settings {
     pub postmaster_address: String,
     pub default_group: i64,
     pub root_group: i64,
+    /// This is ignored if the tls config is set
+    #[serde(default)]
+    pub is_https: bool,
 }
 impl Default for Settings {
     fn default() -> Self {
@@ -120,6 +123,7 @@ impl Default for Settings {
             postmaster_address: "".to_string(),
             default_group: 1,
             root_group: 2,
+            is_https: false,
         }
     }
 }

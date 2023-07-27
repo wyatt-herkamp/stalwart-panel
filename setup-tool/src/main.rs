@@ -356,7 +356,7 @@ async fn import_database(database: &mut DatabaseConnection, old_database: &str, 
 
     let (old_accounts, group_members, old_emails) = if old_database.contains("sqlite") {
         get_old_data_sqlite(old_database).await
-    }else{
+    } else {
         todo!("Add support for other databases")
     };
 

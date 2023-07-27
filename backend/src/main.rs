@@ -17,8 +17,12 @@ use sea_orm::{ConnectOptions, Database};
 use std::fs::File;
 use std::io;
 use std::io::BufReader;
+use std::ops::Deref;
 use std::path::PathBuf;
 use tokio::fs::read_to_string;
+use tracing::Level;
+use tracing_actix_web::TracingLogger;
+use tracing_subscriber::util::SubscriberInitExt;
 use utils::config::Settings;
 use utils::stalwart_manager::StalwartManager;
 
@@ -31,10 +35,30 @@ pub use error::WebsiteError as Error;
 pub type Result<T> = std::result::Result<T, Error>;
 #[derive(Parser)]
 struct Command {
-    #[clap(short, long)]
+    #[clap(short, long, default_value = "stalwart-panel.toml")]
     config: PathBuf,
-    #[clap(short, long)]
+    #[clap(short, long, default_value = "stalwart-manager.toml")]
     stalwart_manager: PathBuf,
+}
+#[derive(Clone, Copy, Debug)]
+pub struct Https(bool);
+impl Deref for Https {
+    type Target = bool;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+impl AsRef<bool> for Https {
+    fn as_ref(&self) -> &bool {
+        &self.0
+    }
+}
+
+impl Into<bool> for Https {
+    fn into(self) -> bool {
+        self.0
+    }
 }
 pub type DatabaseConnection = Data<sea_orm::DatabaseConnection>;
 /// Mutex's are slightly faster than RwLocks and we don't really need to have multiple readers
@@ -43,6 +67,13 @@ pub type SlalwartManager = Data<Mutex<StalwartManager>>;
 
 #[actix_web::main]
 async fn main() -> io::Result<()> {
+    let collector = tracing_subscriber::fmt()
+        // filter spans/events with level TRACE or higher.
+        .with_max_level(Level::TRACE)
+        // build but do not install the subscriber.
+        .finish();
+    collector.init();
+
     let command = Command::parse();
 
     let config = read_to_string(command.config).await?;
@@ -58,7 +89,8 @@ async fn main() -> io::Result<()> {
         .map(|v| Data::new(Mutex::new(v)))
         .expect("Failed to create Stalwart Manager");
 
-    let session_manager = SessionManager::new(PathBuf::new().join("sessions.redb"))
+    let session_file = PathBuf::new().join("sessions.redb");
+    let session_manager = SessionManager::new(session_file)
         .map(Data::new)
         .expect("Failed to create session manager");
 
@@ -74,6 +106,12 @@ async fn main() -> io::Result<()> {
         email_access: email.clone().into_inner(),
         requests: Default::default(),
     });
+
+    let http_or_https = Data::new(Https(if server_config.tls.is_some() {
+        true
+    } else {
+        server_config.is_https
+    }));
     let server = HttpServer::new(move || {
         let cors = Cors::default()
             .allow_any_origin()
@@ -85,7 +123,9 @@ async fn main() -> io::Result<()> {
             .app_data(stalwart_manager.clone())
             .app_data(session_manager.clone())
             .app_data(email.clone())
+            .app_data(http_or_https.clone())
             .app_data(password_reset.clone())
+            .wrap(TracingLogger::default())
             .wrap(cors)
             .service(
                 Scope::new("/api")
@@ -94,13 +134,11 @@ async fn main() -> io::Result<()> {
                         Scope::new("/emails")
                             .configure(api::emails::init)
                             .service(Scope::new("/accounts").configure(api::accounts::init)),
-                    )
-                    .service(
-                        Scope::new("/frontend")
-                            .service(Scope::new("/backend").configure(frontend::api::init)),
                     ),
             )
-    });
+            .service((Scope::new("/frontend-api").configure(frontend::api::init)))
+    })
+    .workers(2); // TODO: Make this configurable
 
     let server = if let Some(tls) = server_config.tls {
         let mut cert_file = BufReader::new(File::open(tls.certificate_chain)?);
