@@ -3,3 +3,6 @@
 .idea
 test_data/stalwart-config-test.bak
 test_data/stalwart-config-test.toml
+node_modules
+panel-frontend/dist
+.vscode
