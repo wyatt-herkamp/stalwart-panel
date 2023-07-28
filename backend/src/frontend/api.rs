@@ -15,6 +15,7 @@ use sea_orm::prelude::*;
 use sea_orm::{ActiveValue, IntoActiveModel};
 use serde::{Deserialize, Serialize};
 use tracing::warn;
+use typeshare::typeshare;
 use utils::database::Password;
 
 pub fn init(service: &mut ServiceConfig) {
@@ -25,14 +26,15 @@ pub fn init(service: &mut ServiceConfig) {
         .service(submit_password_reset);
 }
 
+#[typeshare]
 #[derive(Deserialize)]
 pub struct LoginRequest {
     pub username: String,
     pub password: String,
 }
+#[typeshare]
 #[derive(Serialize)]
 pub struct LoginResponse {
-    #[serde(flatten)]
     panel_user: PanelUser,
     session: Session,
 }
@@ -78,7 +80,7 @@ pub async fn login(
     let new_cookie = CookieBuilder::new("session", session.session_id.clone())
         .path("/")
         .secure(true)
-        .same_site(SameSite::Lax)
+        .same_site(SameSite::None)
         .expires(Expiration::Session)
         .finish();
 

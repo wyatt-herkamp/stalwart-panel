@@ -27,6 +27,13 @@ pub enum AuthenticationRaw {
 pub enum Authentication {
     Session { user: PanelUser, session: Session },
 }
+impl Into<PanelUser> for Authentication {
+    fn into(self) -> PanelUser {
+        match self {
+            Authentication::Session { user, .. } => user,
+        }
+    }
+}
 
 impl Authentication {}
 impl Permissions for Authentication {

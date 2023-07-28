@@ -4,9 +4,11 @@ use sea_orm::entity::prelude::*;
 
 pub use permissions::GroupPermissions;
 use serde::{Deserialize, Serialize};
+use typeshare::typeshare;
 
 #[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel, Serialize)]
 #[sea_orm(table_name = "groups")]
+#[typeshare]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = true)]
     pub id: i64,

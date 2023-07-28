@@ -6,6 +6,7 @@ use sea_orm::entity::prelude::*;
 use sea_orm::prelude::DateTimeWithTimeZone;
 use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumString};
+use typeshare::typeshare;
 use utils::database::EmailAddress;
 
 #[derive(
@@ -23,6 +24,7 @@ use utils::database::EmailAddress;
     EnumIter,
 )]
 #[sea_orm(rs_type = "String", db_type = "Text")]
+#[typeshare]
 pub enum EmailType {
     #[default]
     #[sea_orm(string_value = "primary")]
@@ -38,6 +40,7 @@ pub enum EmailType {
 
 #[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel, Serialize)]
 #[sea_orm(table_name = "emails")]
+#[typeshare]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = true)]
     pub id: i64,

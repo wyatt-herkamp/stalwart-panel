@@ -130,6 +130,7 @@ async fn main() -> io::Result<()> {
             .service(
                 Scope::new("/api")
                     .wrap(HandleSession(session_manager.clone()))
+                    .configure(api::user::init)
                     .service(
                         Scope::new("/emails")
                             .configure(api::emails::init)

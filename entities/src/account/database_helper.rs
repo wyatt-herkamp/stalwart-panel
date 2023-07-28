@@ -4,6 +4,7 @@ use crate::{AccountEntity, AccountModel, EmailEntity, EmailModel};
 use sea_orm::prelude::*;
 use sea_orm::{FromQueryResult, JoinType, QuerySelect};
 use serde::{Deserialize, Serialize};
+use typeshare::typeshare;
 use utils::database::EmailAddress;
 
 pub type AccountWithEmails = (AccountModel, Emails);
@@ -27,6 +28,7 @@ pub async fn get_account_with_associated_emails_by_id(
 /// Good for a list of all accounts
 ///
 /// This contains the primary email address for the account if it exists
+#[typeshare]
 #[derive(FromQueryResult, Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 pub struct AccountSimple {
     pub id: i32,

@@ -4,8 +4,10 @@ use sea_orm::{ColumnTrait, DbBackend, Order, QueryOrder, Statement};
 use sea_orm::{ConnectionTrait, DbErr, EntityTrait, QueryFilter};
 use serde::Serialize;
 use std::ops::Deref;
+use typeshare::typeshare;
 use utils::database::EmailAddress;
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Default)]
+#[typeshare]
 pub struct Emails(Vec<EmailModel>);
 impl Emails {
     pub async fn get_by_user_id(

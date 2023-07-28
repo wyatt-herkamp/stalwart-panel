@@ -8,8 +8,10 @@ use sea_orm::sea_query::SimpleExpr;
 use sea_orm::ActiveValue::Unchanged;
 use sea_orm::{FromQueryResult, IntoActiveModel, JoinType, QuerySelect};
 use serde::{Deserialize, Serialize};
+use typeshare::typeshare;
 use utils::database::{EmailAddress, Password};
 
+#[typeshare]
 #[derive(FromQueryResult, Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 pub struct PanelUser {
     pub id: i64,

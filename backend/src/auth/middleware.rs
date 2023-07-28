@@ -1,5 +1,6 @@
 use crate::auth::session::{Session, SessionManager};
 use crate::auth::AuthenticationRaw;
+use crate::error::WebsiteError;
 use actix_service::{forward_ready, Service, Transform};
 use actix_web::body::{BoxBody, EitherBody};
 use actix_web::cookie::Cookie;
@@ -46,9 +47,9 @@ where
     async fn handle_session(
         session_manager: Data<SessionManager>,
         req: &ServiceRequest,
-        cookie: Cookie<'static>,
+        cookie: impl AsRef<str>,
     ) -> Result<(), HttpResponse> {
-        let session: Option<Session> = match session_manager.get_session(cookie.value()) {
+        let session: Option<Session> = match session_manager.get_session(cookie.as_ref()) {
             Ok(ok) => ok,
             Err(e) => {
                 warn!("Session Manager Error: {}", e);
@@ -78,10 +79,32 @@ where
         req: ServiceRequest,
         session_manager: Data<SessionManager>,
     ) -> Result<ServiceResponse<EitherBody<B, BoxBody>>, Error> {
-        if let Some(_auth) = req.headers().get(header::AUTHORIZATION) {
-            todo!("Handle API Tokens")
+        if let Some(auth) = req.headers().get(header::AUTHORIZATION) {
+            let auth_as_str = auth.to_str().map_err(|e| {
+                warn!("Failed to convert auth header to string: {}", e);
+                WebsiteError::BadRequest("Could not parse auth header")
+            })?;
+
+            let split = auth_as_str.split(' ').collect::<Vec<&str>>();
+
+            if split.len() != 2 {
+                return Err(WebsiteError::BadRequest("Could not parse auth header").into());
+            }
+            let auth_type = split[0];
+            match auth_type {
+                "session" => {
+                    if let Err(e) = Self::handle_session(session_manager, &req, split[1]).await {
+                        return Ok(req.into_response(e.map_into_right_body()));
+                    }
+                }
+                _ => {
+                    return Err(
+                        WebsiteError::BadRequest("Unsupported Authorization Header Type").into(),
+                    );
+                }
+            }
         } else if let Some(cookie) = req.cookie("session") {
-            if let Err(e) = Self::handle_session(session_manager, &req, cookie).await {
+            if let Err(e) = Self::handle_session(session_manager, &req, cookie.value()).await {
                 return Ok(req.into_response(e.map_into_right_body()));
             }
         }

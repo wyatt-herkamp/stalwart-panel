@@ -6,6 +6,7 @@ use sea_orm::entity::prelude::*;
 
 use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumIter, EnumString};
+use typeshare::typeshare;
 use utils::database::{EmailAddress, Password};
 
 #[derive(
@@ -22,6 +23,7 @@ use utils::database::{EmailAddress, Password};
     EnumIter,
 )]
 #[sea_orm(rs_type = "String", db_type = "Text")]
+#[typeshare]
 pub enum AccountType {
     #[default]
     #[sea_orm(string_value = "individual")]
@@ -33,7 +35,9 @@ pub enum AccountType {
 
 #[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel, Serialize)]
 #[sea_orm(table_name = "accounts")]
+#[typeshare]
 pub struct Model {
+    #[typeshare(type = "number")]
     #[sea_orm(primary_key, auto_increment = true)]
     pub id: i64,
     pub name: String,

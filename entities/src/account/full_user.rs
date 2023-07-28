@@ -8,8 +8,9 @@ use sea_orm::sea_query::SimpleExpr;
 use sea_orm::{JoinType, QuerySelect, TryGetable};
 use serde::{Deserialize, Serialize};
 use std::ops::{Deref, DerefMut};
+use typeshare::typeshare;
 use utils::database::EmailAddress;
-
+#[typeshare]
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct FullUser {
     pub id: i64,
