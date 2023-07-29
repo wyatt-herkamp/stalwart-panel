@@ -1,0 +1,21 @@
+label {
+  font-weight: bold;
+}
+input {
+  width: 100%;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  border: none;
+  background-color: #000;
+  color: #fff;
+  font-weight: bold;
+
+  &::placeholder {
+    color: #fff;
+    font-weight: bold;
+    &::selection {
+      color: #000;
+      background-color: #fff;
+    }
+  }
+}

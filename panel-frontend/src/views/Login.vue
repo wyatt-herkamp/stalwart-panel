@@ -8,10 +8,21 @@
 import { ref } from 'vue'
 import LoginForm from '@/components/login/LoginForm.vue'
 import LoginResponse from '@/components/login/LoginResponse.vue'
+import { useMeta } from 'vue-meta'
 const username = ref('')
 const password = ref('')
 const tryAgain = ref(false)
 const showLogin = ref(true)
+
+useMeta({
+  title: 'Login',
+  meta: [
+    {
+      name: 'description',
+      content: 'Login to the site'
+    }
+  ]
+})
 function login(form: { username: string; password: string }) {
   username.value = form.username
   password.value = form.password

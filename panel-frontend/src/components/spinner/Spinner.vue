@@ -1,18 +1,19 @@
 <template>
-  <div class="loader">Loading...</div>
+  <div class="loader"></div>
 </template>
 
 <script setup lang="ts"></script>
 
 <style scoped lang="scss">
 @import '@/assets/styles/variables';
+
 .loader,
 .loader:before,
 .loader:after {
   border-radius: 50%;
 }
 .loader {
-  color: #ffffff;
+  color: $text-color;
   font-size: 11px;
   text-indent: -99999em;
   margin: 55px auto;
@@ -20,7 +21,6 @@
   width: 10em;
   height: 10em;
   box-shadow: inset 0 0 0 1em;
-  -ms-transform: translateZ(0);
   transform: translateZ(0);
 }
 .loader:before,
@@ -35,9 +35,7 @@
   border-radius: 10.2em 0 0 10.2em;
   top: -0.1em;
   left: -0.1em;
-  -webkit-transform-origin: 5.1em 5.1em;
   transform-origin: 5.1em 5.1em;
-  -webkit-animation: load2 2s infinite ease 1.5s;
   animation: load2 2s infinite ease 1.5s;
 }
 .loader:after {
@@ -47,9 +45,7 @@
   border-radius: 0 10.2em 10.2em 0;
   top: -0.1em;
   left: 4.9em;
-  -webkit-transform-origin: 0.1em 5.1em;
   transform-origin: 0.1em 5.1em;
-  -webkit-animation: load2 2s infinite ease;
   animation: load2 2s infinite ease;
 }
 

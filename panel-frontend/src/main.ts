@@ -9,13 +9,14 @@ import { createVfm } from 'vue-final-modal'
 import { sessionStore } from './stores/session'
 import App from './App.vue'
 import router from './router'
+import { createMetaManager } from 'vue-meta'
 const app = createApp(App)
 const vfm = createVfm()
 app.use(router)
 
 const pinia = createPinia()
 pinia.use(piniaPluginPersistedstate)
-
+app.use(createMetaManager())
 app.use(pinia)
 
 router.beforeEach((to) => {

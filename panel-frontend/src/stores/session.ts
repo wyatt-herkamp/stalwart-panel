@@ -26,7 +26,8 @@ export const sessionStore = defineStore(
       if (session.value == undefined) {
         return undefined
       }
-      if (session.value.expires < Date.now()) {
+      // Check if the session is still valid
+      if (session.value.expires < new Date()) {
         session.value = undefined
         user.value = undefined
         return undefined

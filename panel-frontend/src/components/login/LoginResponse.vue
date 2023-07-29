@@ -12,7 +12,7 @@
 <script setup lang="ts">
 import type { Ref } from 'vue'
 import { ref, watch } from 'vue'
-import Spinner from '@/components/Spinner.vue'
+import Spinner from '@/components/spinner/Spinner.vue'
 import type { LoginResponse } from '@/types/user'
 import http from '@/http'
 import { sessionStore } from '@/stores/session'
