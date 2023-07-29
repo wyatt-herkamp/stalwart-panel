@@ -7,14 +7,14 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct GroupPermissions {
     pub modify_accounts: bool,
-    pub modify_stalwart_settings: bool,
+    pub manage_system: bool,
 }
 
 impl Default for GroupPermissions {
     fn default() -> Self {
         Self {
             modify_accounts: false,
-            modify_stalwart_settings: false,
+            manage_system: false,
         }
     }
 }
@@ -23,7 +23,7 @@ impl GroupPermissions {
     pub fn new_admin() -> Self {
         Self {
             modify_accounts: true,
-            modify_stalwart_settings: true,
+            manage_system: true,
         }
     }
 }

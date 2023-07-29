@@ -45,7 +45,7 @@ impl Permissions for Authentication {
 
     fn can_manage_system(&self) -> bool {
         match self {
-            Authentication::Session { user, .. } => user.group_permissions.modify_stalwart_settings,
+            Authentication::Session { user, .. } => user.group_permissions.manage_system,
         }
     }
 }

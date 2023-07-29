@@ -1,6 +1,6 @@
 use crate::account::AccountType;
 use crate::emails::{EmailType, Emails};
-use crate::{AccountEntity, AccountModel, EmailEntity, EmailModel};
+use crate::{AccountEntity, AccountModel};
 use sea_orm::prelude::*;
 use sea_orm::{FromQueryResult, JoinType, QuerySelect};
 use serde::{Deserialize, Serialize};

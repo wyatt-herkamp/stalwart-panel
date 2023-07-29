@@ -3,7 +3,7 @@ use crate::auth::AuthenticationRaw;
 use crate::error::WebsiteError;
 use actix_service::{forward_ready, Service, Transform};
 use actix_web::body::{BoxBody, EitherBody};
-use actix_web::cookie::Cookie;
+
 use actix_web::dev::{ServiceRequest, ServiceResponse};
 use actix_web::http::{header, Method};
 use actix_web::web::Data;

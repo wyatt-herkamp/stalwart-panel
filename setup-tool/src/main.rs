@@ -11,10 +11,10 @@ use rand::distributions::Distribution;
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 use sea_orm::sea_query::OnConflict;
-use sea_orm::{ActiveValue, ConnectOptions, ConnectionTrait, DatabaseConnection, EntityTrait};
-use sqlx::database::HasValueRef;
-use sqlx::error::BoxDynError;
-use sqlx::{Any, AnyConnection, Connection, Decode, SqliteConnection};
+use sea_orm::{ActiveValue, ConnectOptions, DatabaseConnection, EntityTrait};
+
+
+use sqlx::{Connection, SqliteConnection};
 use std::collections::HashMap;
 use std::fs::read_to_string;
 use std::path::PathBuf;
@@ -136,12 +136,7 @@ async fn main() {
 
     info!("Stalwart has been configured. Creating the panel config");
 
-    let config = Settings {
-        database: database_config,
-        email,
-        postmaster_address,
-        ..Settings::default()
-    };
+    let config = Settings::new(database_config, postmaster_address, email);
 
     let config = toml::to_string_pretty(&config).expect("Failed to serialize config");
 
@@ -251,9 +246,6 @@ fn update_config(database_config: &Database, mut stalwart_config: Document, file
     let queries = match &database_config {
         Database::Mysql(_) => SQLQuery::new_mysql(),
         Database::Postgres(_) => SQLQuery::new_postgres(),
-        Database::None => {
-            unreachable!("How did you connect to a database that doesn't exist?")
-        }
     };
     stalwart_config["directory"]["sql"]["queries"] = queries.into();
     stalwart_config["directory"]["sql"]["columns"] = SQLColumns::default().into();

@@ -1,7 +1,7 @@
 use crate::emails::EmailType;
 use crate::{EmailEntity, EmailModel};
-use sea_orm::{ColumnTrait, DbBackend, Order, QueryOrder, Statement};
-use sea_orm::{ConnectionTrait, DbErr, EntityTrait, QueryFilter};
+use sea_orm::{ConnectionTrait, DbErr, EntityTrait};
+use sea_orm::{DbBackend, Statement};
 use serde::Serialize;
 use std::ops::Deref;
 use typeshare::typeshare;

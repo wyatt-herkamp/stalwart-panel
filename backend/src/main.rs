@@ -8,7 +8,6 @@ pub mod headers;
 use actix_cors::Cors;
 use actix_web::web::Data;
 use actix_web::{App, HttpServer, Scope};
-use chrono::Duration;
 use clap::Parser;
 use parking_lot::Mutex;
 use rustls::{Certificate, PrivateKey, ServerConfig as RustlsServerConfig};
@@ -20,9 +19,11 @@ use std::io::BufReader;
 use std::ops::Deref;
 use std::path::PathBuf;
 use tokio::fs::read_to_string;
-use tracing::Level;
+use tracing::subscriber::Interest;
+use tracing::{Event, Metadata};
+
 use tracing_actix_web::TracingLogger;
-use tracing_subscriber::util::SubscriberInitExt;
+
 use utils::config::Settings;
 use utils::stalwart_manager::StalwartManager;
 
@@ -31,6 +32,8 @@ use crate::auth::password_reset::PasswordResetManager;
 use crate::auth::session::SessionManager;
 use crate::email_service::EmailService;
 pub use error::WebsiteError as Error;
+use tracing_subscriber::layer::{Context, Filter};
+use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 
 pub type Result<T> = std::result::Result<T, Error>;
 #[derive(Parser)]
@@ -39,6 +42,9 @@ struct Command {
     config: PathBuf,
     #[clap(short, long, default_value = "stalwart-manager.toml")]
     stalwart_manager: PathBuf,
+    // Comments will be destroyed by TOML
+    #[clap(long, default_value = "false")]
+    add_defaults_to_config: bool,
 }
 #[derive(Clone, Copy, Debug)]
 pub struct Https(bool);
@@ -68,18 +74,22 @@ pub type SlalwartManager = Data<Mutex<StalwartManager>>;
 #[actix_web::main]
 async fn main() -> io::Result<()> {
     let collector = tracing_subscriber::fmt()
-        // filter spans/events with level TRACE or higher.
-        .with_max_level(Level::TRACE)
-        // build but do not install the subscriber.
+        .with_max_level(tracing::Level::DEBUG)
         .finish();
+    // filter spans/events with level TRACE or higher.
+    // build but do not install the subscriber.
+
     collector.init();
 
     let command = Command::parse();
 
-    let config = read_to_string(command.config).await?;
+    let config = read_to_string(&command.config).await?;
 
     let server_config: Settings = toml::from_str(&config).expect("Failed to parse config");
-
+    if command.add_defaults_to_config {
+        let config = toml::to_string_pretty(&server_config).expect("Failed to serialize config");
+        std::fs::write(command.config, config).expect("Failed to write config");
+    }
     let database = Database::connect(ConnectOptions::new(server_config.database.to_string()))
         .await
         .map(Data::new)
@@ -89,12 +99,11 @@ async fn main() -> io::Result<()> {
         .map(|v| Data::new(Mutex::new(v)))
         .expect("Failed to create Stalwart Manager");
 
-    let session_file = PathBuf::new().join("sessions.redb");
-    let session_manager = SessionManager::new(session_file)
+    let session_manager = SessionManager::new(server_config.session_manager)
         .map(Data::new)
         .expect("Failed to create session manager");
 
-    SessionManager::start_cleaner(session_manager.clone().into_inner(), Duration::hours(1));
+    SessionManager::start_cleaner(session_manager.clone().into_inner());
 
     let email = EmailService::start(server_config.email)
         .await
@@ -137,7 +146,7 @@ async fn main() -> io::Result<()> {
                             .service(Scope::new("/accounts").configure(api::accounts::init)),
                     ),
             )
-            .service((Scope::new("/frontend-api").configure(frontend::api::init)))
+            .service(Scope::new("/frontend-api").configure(frontend::api::init))
     })
     .workers(2); // TODO: Make this configurable
 

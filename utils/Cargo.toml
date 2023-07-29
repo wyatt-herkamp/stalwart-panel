@@ -6,10 +6,10 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-serde = { version = "1", features = ["derive"] }
+serde = { workspace=true }
 toml = "0.7"
 toml_edit = "0.19"
-
+chrono = {workspace=true}
 argon2 = "0.5"
 sha-crypt = "0.5"
 rand = "0.8.5"

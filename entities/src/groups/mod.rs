@@ -3,7 +3,7 @@ mod permissions;
 use sea_orm::entity::prelude::*;
 
 pub use permissions::GroupPermissions;
-use serde::{Deserialize, Serialize};
+use serde::{Serialize};
 use typeshare::typeshare;
 
 #[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel, Serialize)]

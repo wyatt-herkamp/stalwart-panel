@@ -1,13 +1,13 @@
 use super::{Column as AccountColumn, Entity as AccountEntity, Relation as AccountRelation};
 use crate::account::AccountType;
-use crate::emails::{Column as EmailColumn, EmailType, Emails};
+use crate::emails::{Emails};
 use crate::groups::{Column as GroupColumn, GroupPermissions};
-use crate::{EmailEntity, EmailModel};
+
 use sea_orm::prelude::*;
 use sea_orm::sea_query::SimpleExpr;
 use sea_orm::{JoinType, QuerySelect, TryGetable};
-use serde::{Deserialize, Serialize};
-use std::ops::{Deref, DerefMut};
+use serde::{Serialize};
+
 use typeshare::typeshare;
 use utils::database::EmailAddress;
 #[typeshare]

@@ -23,7 +23,8 @@ pub fn init(service: &mut ServiceConfig) {
         .service(login)
         .service(request_password_reset)
         .service(verify_password_reset)
-        .service(submit_password_reset);
+        .service(submit_password_reset)
+        .service(logout);
 }
 
 #[typeshare]

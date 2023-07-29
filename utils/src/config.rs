@@ -1,3 +1,4 @@
+use chrono::Duration;
 use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
 
@@ -8,9 +9,7 @@ use serde::{Deserialize, Serialize};
 pub enum Database {
     Mysql(MysqlSettings),
     Postgres(PostgresSettings),
-    None,
 }
-
 impl Database {
     pub fn test() -> Self {
         Database::Postgres(PostgresSettings {
@@ -21,17 +20,11 @@ impl Database {
         })
     }
 }
-impl Default for Database {
-    fn default() -> Self {
-        Database::None
-    }
-}
 impl Display for Database {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Database::Mysql(mysql) => write!(f, "{}", mysql),
             Database::Postgres(postgres) => write!(f, "{}", postgres),
-            Database::None => panic!("No Database Configured"),
         }
     }
 }
@@ -59,6 +52,7 @@ pub struct PostgresSettings {
     pub host: String,
     pub database: String,
 }
+
 impl Display for PostgresSettings {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
@@ -88,15 +82,38 @@ pub struct EmailSetting {
     pub reply_to: Option<String>,
 }
 
-impl Default for EmailSetting {
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct SessionManager {
+    #[serde(with = "crate::duration_serde::as_seconds")]
+    pub lifespan: Duration,
+    #[serde(with = "crate::duration_serde::as_seconds")]
+    pub cleanup_interval: Duration,
+    pub dev: bool,
+    pub database_location: PathBuf,
+}
+impl Default for SessionManager {
     fn default() -> Self {
-        EmailSetting {
-            username: "no-reply@example.com".to_string(),
-            password: "".to_string(),
-            host: "example.com:587".to_string(),
-            encryption: EmailEncryption::TLS,
-            from: "no-reply@example.com".to_string(),
-            reply_to: None,
+        Self {
+            lifespan: Duration::days(1),
+            cleanup_interval: Duration::hours(1),
+            dev: false,
+            database_location: PathBuf::from("sessions.redb"),
+        }
+    }
+}
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct PasswordReset {
+    // If this is 0 then it will never force a password reset
+    #[serde(with = "crate::duration_serde::as_days")]
+    pub how_often_to_force_reset: Duration,
+    #[serde(with = "crate::duration_serde::as_seconds")]
+    pub reset_service_interval: Duration,
+}
+impl Default for PasswordReset {
+    fn default() -> Self {
+        Self {
+            how_often_to_force_reset: Duration::days(0),
+            reset_service_interval: Duration::days(1),
         }
     }
 }
@@ -109,24 +126,31 @@ pub struct Settings {
     pub postmaster_address: String,
     pub default_group: i64,
     pub root_group: i64,
+    #[serde(default)]
+    pub require_password_reset: PasswordReset,
+    #[serde(default)]
+    pub session_manager: SessionManager,
     /// This is ignored if the tls config is set
     #[serde(default)]
     pub is_https: bool,
 }
-impl Default for Settings {
-    fn default() -> Self {
+impl Settings {
+    pub fn new(database: Database, postmaster_address: String, email: EmailSetting) -> Self {
         Self {
             bind_address: "0.0.0.0:5312".to_string(),
-            database: Database::None,
+            database,
             tls: None,
-            email: Default::default(),
-            postmaster_address: "".to_string(),
+            email,
+            postmaster_address,
             default_group: 1,
             root_group: 2,
+            require_password_reset: Default::default(),
+            session_manager: Default::default(),
             is_https: false,
         }
     }
 }
+
 #[derive(Debug, Deserialize, Serialize, Clone, Default)]
 pub struct TlsConfig {
     pub private_key: PathBuf,

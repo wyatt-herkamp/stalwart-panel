@@ -51,8 +51,8 @@ parking_lot = "0.12"
 typeshare = "1"
 utoipa = { version="3", features = ["actix_extras"] }
 utoipa-swagger-ui = { version="3", features = ["actix-web"] }
-tracing-subscriber = "0.3"
+tracing-subscriber = { version = "0.3",features = ["env-filter"] }
 [dependencies.lettre]
 version = "0.10"
-features = ["tracing", "tokio1-rustls-tls", "builder","smtp-transport", "pool" ]
+features = [ "tokio1-rustls-tls", "builder","smtp-transport" ]
 default-features = false

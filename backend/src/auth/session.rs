@@ -4,11 +4,12 @@ use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 use redb::{CommitError, Database, Error, ReadableTable, TableDefinition};
 use serde::Serialize;
-use std::path::PathBuf;
+
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use thiserror::Error;
-
+use tracing::{debug, error, info};
+use utils::config::SessionManager as SessionConfig;
 #[derive(Debug, Error)]
 pub enum SessionError {
     #[error("Infallible")]
@@ -66,24 +67,55 @@ impl Session {
 const TABLE: TableDefinition<&str, SessionTuple> = TableDefinition::new("sessions");
 
 pub struct SessionManager {
+    config: SessionConfig,
     sessions: Database,
     running: AtomicBool,
 }
 impl SessionManager {
-    pub fn new(path: PathBuf) -> Result<Self, Error> {
-        let sessions = if path.exists() {
-            Database::open(path)?
+    pub fn new(session_config: SessionConfig) -> Result<Self, Error> {
+        let sessions = if session_config.database_location.exists() {
+            let database = Database::open(&session_config.database_location)?;
+            #[cfg(debug_assertions)]
+            {
+                println!("Opened database: {:?}", database);
+                let session = database.begin_read()?;
+                let table = session.open_table(TABLE)?;
+                debug!("Found {} sessions", table.len()?);
+            }
+            if session_config.dev {
+                // Delete all sessions
+                // Why is this complicated?
+                // Well, the indexes are String and for some reason I can't just use drain
+                let session = database.begin_write()?;
+                let mut table = session.open_table(TABLE)?;
+                let mut to_remove = Vec::with_capacity(table.len()? as usize);
+                let iter = table.iter()?;
+
+                for index in iter {
+                    let (key, _) = index?;
+                    to_remove.push(key.value().to_string());
+                }
+                for key in to_remove {
+                    table.remove(key.as_str())?;
+                }
+                drop(table);
+                session.commit()?;
+                info!("Cleared all sessions. If you don't want this disable session_manager.dev in stalwart-panel.toml")
+            }
+            database
         } else {
-            Database::create(path)?
+            Database::create(&session_config.database_location)?
         };
 
         Ok(Self {
+            config: session_config,
             sessions,
             running: AtomicBool::new(false),
         })
     }
 
-    pub async fn clean_inner(&self) -> Result<(), SessionError> {
+    pub async fn clean_inner(&self) -> Result<u32, SessionError> {
+        let mut sessions_removed = 0u32;
         let sessions = self.sessions.begin_write()?;
 
         let mut table = sessions.open_table(TABLE)?;
@@ -100,21 +132,31 @@ impl SessionManager {
         }
         for key in to_remove {
             if let Err(e) = table.remove(key.as_str()) {
-                println!("Failed to remove session: {:?}", e); // TODO: Log
+                error!("Failed to remove session: {:?}", e);
             }
+            sessions_removed += 1;
         }
         drop(table);
-        sessions.commit().map_err(|x| x.into())
+        sessions.commit()?;
+        Ok(sessions_removed)
     }
-    pub fn start_cleaner(this: Arc<Self>, how_often: Duration) {
+    pub fn start_cleaner(this: Arc<Self>) {
         actix_rt::spawn(async move {
             let this = this;
-            let how_often = how_often.to_std().expect("Duration is too large");
+            let how_often = this
+                .config
+                .cleanup_interval
+                .to_std()
+                .expect("Duration is too large");
             while this.running.load(Ordering::Relaxed) {
+                info!("Cleaning sessions");
                 match this.clean_inner().await {
-                    Ok(_) => actix_rt::time::sleep(how_often).await,
+                    Ok(value) => {
+                        info!("Cleaned {} sessions", value);
+                        actix_rt::time::sleep(how_often).await
+                    }
                     Err(err) => {
-                        println!("Failed to clean sessions: {:?}", err); // TODO: Log
+                        error!("Failed to clean sessions: {:?}", err);
                         actix_rt::time::sleep(how_often / 2).await
                     }
                 }
