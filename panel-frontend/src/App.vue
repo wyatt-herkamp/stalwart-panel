@@ -8,7 +8,7 @@
     <SideNavBar />
     <RouterView />
   </div>
-
+  <notifications />
   <ModalsContainer />
 </template>
 
@@ -23,7 +23,9 @@ import SideNavBar from '@/components/SideNavBar.vue'
   display: flex;
   flex-direction: row;
   height: 100vh;
-
+  div {
+    flex-shrink: 0;
+  }
   main {
     flex-grow: 1;
   }

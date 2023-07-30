@@ -2,6 +2,7 @@ import 'normalize.css/normalize.css'
 import './assets/styles/main.scss'
 import 'vue-final-modal/style.css'
 import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
+import Notifications from '@kyvg/vue3-notification'
 
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
@@ -27,5 +28,7 @@ router.beforeEach((to) => {
     }
   }
 })
+app.use(Notifications)
+
 app.use(vfm)
 app.mount('#app')

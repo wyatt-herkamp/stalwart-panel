@@ -1,6 +1,8 @@
 <template>
-  <label :for="id"><slot /></label>
-  <input type="password" :id="id" v-model="value" v-bind="$attrs" />
+  <div>
+    <label :for="id"><slot /></label>
+    <input type="password" :id="id" v-model="value" v-bind="$attrs" />
+  </div>
 </template>
 <script setup lang="ts">
 import { ref, watch } from 'vue'

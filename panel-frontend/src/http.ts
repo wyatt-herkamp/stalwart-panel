@@ -13,7 +13,7 @@ const axiosInstance = axios.create({
 axiosInstance.interceptors.request.use((config) => {
   const store = sessionStore()
   if (store.session !== undefined) {
-    config.headers.Authorization = `Session ${store.session.session_id}`
+    config.headers.Authorization = `session ${store.session.session_id}`
   }
   return config
 })

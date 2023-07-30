@@ -2,14 +2,21 @@
   <div v-if="user" id="sideBar">
     <div class="logo sideBarItem">
       <router-link to="home">
-        <img src="favicon.ico" alt="logo" />
+        <img src="/favicon.ico" alt="logo" />
         Stalwart Panel
       </router-link>
     </div>
 
     <ul class="sideBarItem">
       <li class="listOption">Welcome {{ pickName(user.name) }}</li>
-      <li class="listOption" v-if="user.group_permissions.modify_accounts">Users</li>
+      <li class="listOption" v-if="user.group_permissions.modify_accounts">
+        <router-link
+          :to="{
+            name: 'accounts'
+          }"
+          >Accounts</router-link
+        >
+      </li>
       <li class="listOption" v-if="user.group_permissions.manage_system">System</li>
     </ul>
     <div id="logout" class="sideBarItem">

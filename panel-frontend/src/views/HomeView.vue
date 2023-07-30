@@ -1,7 +1,7 @@
 <template>
   <main>
     <h1>Home</h1>
-    <p>Logged in as {{ sessionStore().user.name }}</p>
+    <p>Logged in as {{ sessionStore()?.user?.name }}</p>
   </main>
 </template>
 <script setup lang="ts">

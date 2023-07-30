@@ -1,7 +1,8 @@
 <template>
-  <div>
+  <div class="checkBox">
+    <input type="checkbox" :id="id" v-model="value" v-bind="$attrs" />
+
     <label :for="id"><slot /></label>
-    <input type="text" :id="id" v-model="value" v-bind="$attrs" />
   </div>
 </template>
 <script setup lang="ts">
@@ -20,4 +21,17 @@ watch(value, (newValue) => {
 })
 </script>
 
-<style scoped lang="scss"></style>
+<style scoped lang="scss">
+.checkBox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: auto auto;
+  white-space: pre;
+  label {
+    margin-left: 0.5rem;
+  }
+}
+input[type='checkbox'] {
+}
+</style>

@@ -1,11 +1,15 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import Login from '@/views/Login.vue'
+import Accounts from '@/views/accounts/Accounts.vue'
+import ViewAccount from '@/views/accounts/ViewAccount.vue'
 export {}
 
 declare module 'vue-router' {
   interface RouteMeta {
     requiresAuth: boolean
+    requiresAccessToUsers?: boolean
+    requiresAccessToSystem?: boolean
   }
 }
 const router = createRouter({
@@ -25,6 +29,24 @@ const router = createRouter({
       component: Login,
       meta: {
         requiresAuth: false
+      }
+    },
+    {
+      path: '/accounts',
+      name: 'accounts',
+      component: Accounts,
+      meta: {
+        requiresAuth: true,
+        requiresAccessToUsers: true
+      }
+    },
+    {
+      path: '/account/view/:id',
+      name: 'view-account',
+      component: ViewAccount,
+      meta: {
+        requiresAuth: true,
+        requiresAccessToUsers: true
       }
     }
   ]
