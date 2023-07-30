@@ -1,12 +1,12 @@
 use super::{Column as AccountColumn, Entity as AccountEntity, Relation as AccountRelation};
 use crate::account::AccountType;
-use crate::emails::{Emails};
+use crate::emails::Emails;
 use crate::groups::{Column as GroupColumn, GroupPermissions};
 
 use sea_orm::prelude::*;
 use sea_orm::sea_query::SimpleExpr;
 use sea_orm::{JoinType, QuerySelect, TryGetable};
-use serde::{Serialize};
+use serde::Serialize;
 
 use typeshare::typeshare;
 use utils::database::EmailAddress;
@@ -88,4 +88,15 @@ impl FullUser {
             Self::get_user(connection, AccountColumn::Id.eq(id)).await
         }
     }
+}
+#[cfg(test)]
+#[tokio::test]
+pub async fn test() {
+    let connection = crate::test::create_database_connection().await;
+
+    let user = FullUser::get_by_id(&connection, 1, true)
+        .await
+        .unwrap()
+        .unwrap();
+    println!("{:#?}", user)
 }

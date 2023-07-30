@@ -99,7 +99,7 @@ where
                 }
                 _ => {
                     return Err(
-                        WebsiteError::BadRequest("Unsupported Authorization Header Type").into(),
+                        WebsiteError::BadRequest("Unsupported Authorization Header Type ").into(),
                     );
                 }
             }

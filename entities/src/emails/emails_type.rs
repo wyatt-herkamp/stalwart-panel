@@ -20,8 +20,8 @@ impl Emails {
                     .from_raw_sql(Statement::from_sql_and_values(
                         DbBackend::MySql,
                         r#"SELECT * FROM "emails" WHERE "account" = ?
-                                    ORDER BY case when email.email_type = 'primary' then 1 else 2 end,
-                                          email.email_type ASC"#,
+                                    ORDER BY case when emails.email_type = 'primary' then 1 else 2 end,
+                                          emails.email_type ASC"#,
                         [user_id.into()],
                     ))
             }
@@ -30,8 +30,8 @@ impl Emails {
                     .from_raw_sql(Statement::from_sql_and_values(
                         DbBackend::Postgres,
                         r#"SELECT * FROM "emails" WHERE "account" = $1
-                                    ORDER BY case when email.email_type = 'primary' then 1 else 2 end,
-                                          email.email_type ASC"#,
+                                    ORDER BY case when emails.email_type = 'primary' then 1 else 2 end,
+                                          emails.email_type ASC"#,
                         [user_id.into()],
                     ))
             }

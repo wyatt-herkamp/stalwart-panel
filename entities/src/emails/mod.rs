@@ -1,4 +1,4 @@
-mod database_helper;
+pub mod database_helper;
 mod emails_type;
 
 pub use emails_type::Emails;

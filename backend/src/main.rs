@@ -32,8 +32,8 @@ use crate::auth::password_reset::PasswordResetManager;
 use crate::auth::session::SessionManager;
 use crate::email_service::EmailService;
 pub use error::WebsiteError as Error;
-use tracing_subscriber::layer::{Context, Filter};
-use tracing_subscriber::{fmt, prelude::*, EnvFilter};
+use tracing_subscriber::layer::Filter;
+use tracing_subscriber::prelude::*;
 
 pub type Result<T> = std::result::Result<T, Error>;
 #[derive(Parser)]
@@ -86,6 +86,7 @@ async fn main() -> io::Result<()> {
     let config = read_to_string(&command.config).await?;
 
     let server_config: Settings = toml::from_str(&config).expect("Failed to parse config");
+
     if command.add_defaults_to_config {
         let config = toml::to_string_pretty(&server_config).expect("Failed to serialize config");
         std::fs::write(command.config, config).expect("Failed to write config");
@@ -140,11 +141,8 @@ async fn main() -> io::Result<()> {
                 Scope::new("/api")
                     .wrap(HandleSession(session_manager.clone()))
                     .configure(api::user::init)
-                    .service(
-                        Scope::new("/emails")
-                            .configure(api::emails::init)
-                            .service(Scope::new("/accounts").configure(api::accounts::init)),
-                    ),
+                    .service(Scope::new("/accounts").configure(api::accounts::init))
+                    .service(Scope::new("/emails").configure(api::emails::init)),
             )
             .service(Scope::new("/frontend-api").configure(frontend::api::init))
     })

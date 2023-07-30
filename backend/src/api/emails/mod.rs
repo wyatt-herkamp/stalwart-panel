@@ -4,8 +4,8 @@ use crate::error::WebsiteError;
 use crate::{DatabaseConnection, Result};
 use actix_web::web::ServiceConfig;
 use actix_web::{delete, put, web, HttpResponse};
-use entities::emails::{EmailType, Emails};
-use entities::{AccountEntity, EmailActiveModel, EmailEntity, EmailModel};
+use entities::emails::{ActiveModel, EmailType, Emails};
+use entities::{emails, AccountEntity, EmailActiveModel, EmailEntity, EmailModel};
 use sea_orm::{
     ActiveModelTrait, ActiveValue, ColumnTrait, DeleteResult, EntityTrait, IntoActiveModel,
     PaginatorTrait, QueryFilter, TryIntoModel,
@@ -14,20 +14,21 @@ use serde::Deserialize;
 use tracing::debug;
 use utils::database::EmailAddress;
 pub fn init(service: &mut ServiceConfig) {
-    service.service(add_email).service(delete_email);
+    service.service(add_or_update).service(delete_email);
 }
 
 #[derive(Debug, Deserialize)]
-pub struct NewEmail {
-    pub email: EmailAddress,
+pub struct AddOrUpdateEmail {
+    pub id: Option<i64>,
+    pub email_address: EmailAddress,
     pub email_type: EmailType,
 }
 
 #[put("/{user}")]
-pub async fn add_email(
+pub async fn add_or_update(
     connection: DatabaseConnection,
     account_id: web::Path<i64>,
-    email: web::Json<NewEmail>,
+    email: web::Json<AddOrUpdateEmail>,
     auth: Authentication,
 ) -> Result<HttpResponse> {
     if !auth.can_manage_users() {
@@ -42,53 +43,76 @@ pub async fn add_email(
         return Err(WebsiteError::NotFound);
     }
 
-    let NewEmail {
-        email: email_address,
+    let AddOrUpdateEmail {
+        id,
+        email_address,
         email_type,
     } = email.into_inner();
 
-    let emails = Emails::get_by_user_id(connection.as_ref(), user).await?;
-
-    let email = if let Some(value) = emails.get_by_address(&email_address) {
-        if value.email_type == email_type {
-            return Ok(HttpResponse::Conflict().json(value));
-        } else {
-            value.clone().into_active_model()
+    let mut email: ActiveModel = if let Some(id) = id {
+        let email = EmailEntity::find_by_id(id)
+            .one(connection.as_ref())
+            .await?
+            .ok_or(WebsiteError::NotFound)?;
+        if email.account != user {
+            return Err(WebsiteError::Unauthorized);
         }
+        let mut email_model = email.into_active_model();
+        email_model.email_address = ActiveValue::Set(email_address);
+        email_model.email_type = ActiveValue::Set(email_type);
+        email_model
     } else {
-        EmailActiveModel {
-            id: Default::default(),
-            account: ActiveValue::Set(user),
-            email_address: ActiveValue::Set(email_address),
-            email_type: ActiveValue::Set(email_type),
-            created: entities::now(),
+        if let Some(value) = emails::database_helper::get_by_address(
+            connection.as_ref(),
+            email_address.clone(),
+            user,
+        )
+        .await?
+        {
+            if value.email_type == email_type {
+                return Ok(HttpResponse::Conflict().json(value));
+            } else {
+                let mut email_model = value.into_active_model();
+                email_model.email_address = ActiveValue::Set(email_address);
+                email_model.email_type = ActiveValue::Set(email_type);
+                email_model
+            }
+        } else {
+            EmailActiveModel {
+                id: Default::default(),
+                account: ActiveValue::Set(user),
+                email_address: ActiveValue::Set(email_address),
+                email_type: ActiveValue::Set(email_type),
+                created: entities::now(),
+            }
         }
     };
-
     if email_type == EmailType::Primary {
-        if let Some(value) = emails.get_primary().cloned() {
-            debug!("If you put a primary email on an account that already has a primary email, the old primary email will be converted to an alias");
-            let mut value = value.into_active_model();
-            value.email_type = ActiveValue::Set(EmailType::Alias);
-            value.save(connection.as_ref()).await?;
+        if let Some(value) =
+            emails::database_helper::get_primary_address(connection.as_ref(), user).await?
+        {
+            if value.id != *email.id.as_ref() {
+                debug!("If you put a primary email on an account that already has a primary email, the old primary email will be converted to an alias");
+                let mut value = value.into_active_model();
+                value.email_type = ActiveValue::Set(EmailType::Alias);
+                value.save(connection.as_ref()).await?;
+            }
         }
     }
-
-    let active: EmailModel = email.save(connection.as_ref()).await?.try_into_model()?;
-
+    debug!("Saving email: {:?}", email);
+    let active = email.save(connection.as_ref()).await?.try_into_model()?;
     Ok(HttpResponse::Ok().json(active))
 }
 #[derive(Debug, Deserialize)]
 pub struct EmailAddressRemove {
-    pub email_address: EmailAddress,
     #[serde(default)]
     pub purge_emails_to_address_in_account: bool,
 }
-#[delete("/{user}")]
+#[delete("/{user}/{email_id}")]
 pub async fn delete_email(
     connection: DatabaseConnection,
-    account_id: web::Path<i64>,
-    email_address: web::Form<EmailAddressRemove>,
+    account_id: web::Path<(i64, i64)>,
+    email_address: web::Query<EmailAddressRemove>,
     auth: Authentication,
 ) -> Result<HttpResponse> {
     use entities::emails::Column as EmailColumn;
@@ -96,12 +120,11 @@ pub async fn delete_email(
         return Err(WebsiteError::Unauthorized);
     }
 
-    let user = account_id.into_inner();
-    let email_address = email_address.into_inner().email_address;
+    let (user, email_id) = account_id.into_inner();
     let result: DeleteResult = EmailEntity::delete_many()
         .filter(
-            EmailColumn::EmailAddress
-                .eq(email_address)
+            EmailColumn::Id
+                .eq(email_id)
                 .and(EmailColumn::Account.eq(user)),
         )
         .exec(connection.as_ref())

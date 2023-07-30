@@ -2,6 +2,7 @@ use super::{Column as AccountColumn, Entity as AccountEntity, Relation as Accoun
 use crate::emails::{Column as EmailColumn, EmailType};
 use crate::groups::{Column as GroupColumn, GroupPermissions};
 
+use crate::account::full_user::FullUser;
 use crate::ActiveAccountModel;
 use sea_orm::prelude::*;
 use sea_orm::sea_query::SimpleExpr;

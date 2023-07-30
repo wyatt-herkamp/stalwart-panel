@@ -17,6 +17,10 @@ strum_macros =  {workspace=true}
 typeshare = "1"
 chrono = "0.4"
 utils = { path = "../utils", features = ["sea-orm"] }
+
+[dev-dependencies]
+sea-orm = { workspace=true, features = ["macros","sqlx-mysql","sqlx-postgres", "runtime-tokio-rustls"] }
+tokio = { version = "1", features = ["full"] }
 [features]
 default =["cli"]
 cli = ["sea-orm/runtime-tokio-rustls"]
