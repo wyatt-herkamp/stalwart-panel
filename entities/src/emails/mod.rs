@@ -45,6 +45,7 @@ pub struct Model {
     #[sea_orm(primary_key, auto_increment = true)]
     pub id: i64,
     pub account: i64,
+    #[sea_orm(column_type = "Text")]
     pub email_address: EmailAddress,
     #[sea_orm(column_type = "Text")]
     pub email_type: EmailType,

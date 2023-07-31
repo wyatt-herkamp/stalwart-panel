@@ -3,7 +3,7 @@ mod permissions;
 use sea_orm::entity::prelude::*;
 
 pub use permissions::GroupPermissions;
-use serde::{Serialize};
+use serde::Serialize;
 use typeshare::typeshare;
 
 #[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel, Serialize)]
@@ -12,7 +12,7 @@ use typeshare::typeshare;
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = true)]
     pub id: i64,
-    #[sea_orm(unique)]
+    #[sea_orm(unique, column_type = "Text")]
     pub group_name: String,
     #[sea_orm(column_type = "Json")]
     pub permissions: GroupPermissions,

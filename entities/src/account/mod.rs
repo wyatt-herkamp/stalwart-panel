@@ -37,13 +37,12 @@ pub enum AccountType {
 #[sea_orm(table_name = "accounts")]
 #[typeshare]
 pub struct Model {
-    #[typeshare(type = "number")]
     #[sea_orm(primary_key, auto_increment = true)]
     pub id: i64,
     pub name: String,
-    #[sea_orm(unique)]
+    #[sea_orm(unique, column_type = "Text")]
     pub username: String,
-    #[sea_orm(default = "String::new()")]
+    #[sea_orm(default = "", column_type = "Text")]
     pub description: String,
     pub group_id: i64,
     #[serde(skip_serializing)]
@@ -52,11 +51,11 @@ pub struct Model {
     pub require_password_change: bool,
     #[sea_orm(default = "0")]
     pub quota: i64,
-    #[sea_orm(default_value = "Individual")]
+    #[sea_orm(default_value = "Individual", column_type = "Text")]
     pub account_type: AccountType,
     #[sea_orm(default = "true")]
     pub active: bool,
-    #[sea_orm(unique, nullable)]
+    #[sea_orm(unique, nullable, column_type = "Text")]
     pub backup_email: Option<EmailAddress>,
     pub created: DateTimeWithTimeZone,
 }

@@ -68,13 +68,13 @@ impl SQLQuery {
     /// This is the queries that are used in Stalwart to use this panels database for Postgres
     pub fn new_postgres() -> Self {
         Self{
-            name: "SELECT username, type, password, description, quota FROM accounts WHERE name = $1 AND active = true".into(),
+            name: "SELECT username, account_type, password, description, quota FROM accounts WHERE username = $1 AND active = true".into(),
             members: "SELECT g.group_name FROM groups AS g INNER JOIN accounts as a ON g.id = a.group_id AND a.username = $1".into(),
-            recipients: "SELECT a.username FROM accounts as a INNER JOIN emails as e ON a.id = e.account AND e.email = $1".into(),
-            emails: "SELECT e.email FROM emails as e INNER JOIN accounts as a ON e.account = a.id AND a.username = $1".into(),
-            verify: "SELECT email FROM emails WHERE email LIKE '%' || $1 || '%' AND type = 'primary' ORDER BY email LIMIT 5".into(),
-            expand: "SELECT p.email FROM emails AS p JOIN emails AS l ON p.name = l.name WHERE p.type = 'primary' AND l.email = $1 AND l.type = 'list' ORDER BY p.email LIMIT 50".into(),
-            domains: "SELECT 1 FROM emails WHERE email LIKE '%@' || $1 LIMIT 1".into(),
+            recipients: "SELECT a.username FROM accounts as a INNER JOIN emails as e ON a.id = e.account AND e.email_address = $1".into(),
+            emails: "SELECT e.email_address FROM emails as e INNER JOIN accounts as a ON e.account = a.id AND a.username = $1".into(),
+            verify: "SELECT email_address FROM emails WHERE email_address LIKE '%' || $1 || '%' AND email_type = 'primary' ORDER BY email_address LIMIT 5".into(),
+            expand: "SELECT p.email_address FROM emails AS p JOIN emails AS l ON p.username = l.username WHERE p.email_type = 'primary' AND l.email_address = $1 AND l.type = 'list' ORDER BY p.email_address LIMIT 50".into(),
+            domains: "SELECT 1 FROM emails WHERE email_address LIKE '%@' || $1 LIMIT 1".into(),
         }
     }
     /// This is the queries that are used in Stalwart to use this panels database for MySQL.
@@ -126,7 +126,7 @@ impl Default for SQLColumns {
             secret: "password".into(),
             email: "email_address".into(),
             quota: "quota".into(),
-            email_type: "account_type".into(),
+            email_type: "email_type".into(),
         }
     }
 }
