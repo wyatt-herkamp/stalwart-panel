@@ -16,6 +16,7 @@ pub struct Model {
     pub group_name: String,
     #[sea_orm(column_type = "Json")]
     pub permissions: GroupPermissions,
+    #[sea_orm(default_expr = "Expr::current_timestamp()")]
     pub created: DateTimeWithTimeZone,
 }
 

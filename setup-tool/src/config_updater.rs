@@ -47,7 +47,7 @@ pub(crate) fn update_config(
         Database::Mysql(_) => SQLQuery::new_mysql(),
         Database::Postgres(_) => SQLQuery::new_postgres(),
     };
-    stalwart_config["directory"]["sql"]["queries"] = queries.into();
+    stalwart_config["directory"]["sql"]["query"] = queries.into();
     stalwart_config["directory"]["sql"]["columns"] = SQLColumns::default().into();
 
     // Backup the old config file

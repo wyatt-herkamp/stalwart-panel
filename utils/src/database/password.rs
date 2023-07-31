@@ -73,8 +73,8 @@ impl PasswordType {
             PasswordType::SHA512
         } else if password.starts_with("{PLAIN}")
             || password.starts_with("{plain}")
-            || password.starts_with("{plaintext}")
-            || password.starts_with("{PLAINTEXT}")
+            || password.starts_with("{clear}")
+            || password.starts_with("{CLEAR}")
         {
             PasswordType::PlainText
         } else {
@@ -97,7 +97,8 @@ impl Debug for Password {
 }
 impl Password {
     pub fn hash(&mut self, method: PasswordType) -> Result<(), PasswordErrors> {
-        let password = mem::take(&mut self.password);
+        //Get all characters after the first 6
+        let password = &self.password[6..];
         let result = Self::new_hash(password, method)?;
         *self = result;
         Ok(())

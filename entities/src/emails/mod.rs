@@ -47,8 +47,9 @@ pub struct Model {
     pub account: i64,
     #[sea_orm(column_type = "Text")]
     pub email_address: EmailAddress,
-    #[sea_orm(column_type = "Text")]
+    #[sea_orm(column_type = "Text", default_value = "alias")]
     pub email_type: EmailType,
+    #[sea_orm(default_expr = "Expr::current_timestamp()")]
     pub created: DateTimeWithTimeZone,
 }
 

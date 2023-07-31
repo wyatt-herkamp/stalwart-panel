@@ -5,7 +5,7 @@ use inquire::Confirm;
 use log::{debug, info, warn};
 use sea_orm::sea_query::OnConflict;
 use sea_orm::{ActiveValue, DatabaseConnection, EntityTrait};
-use sqlx::{Connection, SqliteConnection};
+use sqlx::{postgres, Connection, SqliteConnection};
 
 use entities::account::AccountType;
 use entities::emails::EmailType;
@@ -53,6 +53,32 @@ async fn get_old_data_sqlite(
 
     (old_accounts, group_members, old_emails)
 }
+async fn get_old_data_postgres(
+    old_database: &str,
+) -> (Vec<OldAccount>, Vec<(String, String)>, Vec<OldEmail>) {
+    let mut old_database = postgres::PgConnection::connect(old_database)
+        .await
+        .expect("Failed to connect to old database");
+
+    let old_accounts: Vec<OldAccount> = sqlx::query_as("SELECT * FROM accounts")
+        .fetch_all(&mut old_database)
+        .await
+        .expect("Failed to fetch accounts");
+
+    debug!("Found {} Accounts", old_accounts.len());
+    let group_members: Vec<(String, String)> = sqlx::query_as("SELECT * FROM group_members")
+        .fetch_all(&mut old_database)
+        .await
+        .expect("Failed to fetch group members");
+    debug!("Found {} Group Members", group_members.len());
+    let old_emails: Vec<OldEmail> = sqlx::query_as("SELECT * FROM emails")
+        .fetch_all(&mut old_database)
+        .await
+        .expect("Failed to fetch emails");
+    debug!("Found {} Emails", old_emails.len());
+
+    (old_accounts, group_members, old_emails)
+}
 /// Imports the Default Stalwart Database to the new database
 ///
 /// ## Notes
@@ -71,6 +97,8 @@ pub(crate) async fn import_database(
 
     let (old_accounts, group_members, old_emails) = if old_database.contains("sqlite") {
         get_old_data_sqlite(old_database).await
+    } else if old_database.contains("postgres") {
+        get_old_data_postgres(old_database).await
     } else {
         todo!("Add support for other databases")
     };
@@ -138,12 +166,12 @@ pub(crate) async fn import_database(
                     description: ActiveValue::Set(description),
                     group_id: ActiveValue::Set(group_id),
                     password: ActiveValue::Set(password),
-                    require_password_change: ActiveValue::Set(require_password_changes_on_all_users),
-                    quota: ActiveValue::Set(quota),
-                    account_type: ActiveValue::Set(account_type),
-                    active: ActiveValue::Set(active),
-                    backup_email: ActiveValue::Set(None),
-                    created: now(),
+                    require_password_change: Default::default(),
+                    quota: Default::default(),
+                    account_type: Default::default(),
+                    active: Default::default(),
+                    backup_email: Default::default(),
+                    created: Default::default(),
                 },
             )
         })

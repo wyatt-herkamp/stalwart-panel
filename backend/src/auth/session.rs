@@ -78,29 +78,9 @@ impl SessionManager {
             #[cfg(debug_assertions)]
             {
                 println!("Opened database: {:?}", database);
-                let session = database.begin_read()?;
+                let session = database.begin_write()?;
                 let table = session.open_table(TABLE)?;
                 debug!("Found {} sessions", table.len()?);
-            }
-            if session_config.dev {
-                // Delete all sessions
-                // Why is this complicated?
-                // Well, the indexes are String and for some reason I can't just use drain
-                let session = database.begin_write()?;
-                let mut table = session.open_table(TABLE)?;
-                let mut to_remove = Vec::with_capacity(table.len()? as usize);
-                let iter = table.iter()?;
-
-                for index in iter {
-                    let (key, _) = index?;
-                    to_remove.push(key.value().to_string());
-                }
-                for key in to_remove {
-                    table.remove(key.as_str())?;
-                }
-                drop(table);
-                session.commit()?;
-                info!("Cleared all sessions. If you don't want this disable session_manager.dev in stalwart-panel.toml")
             }
             database
         } else {

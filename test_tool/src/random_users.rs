@@ -56,7 +56,9 @@ impl RandomUsersCommand {
             println!("Creating new User {user:?}");
             let email_address = EmailAddress::new(format!(
                 "{}.{}@{}",
-                user.name.first, user.name.last, test_domain
+                user.name.first.to_lowercase(),
+                user.name.last.to_lowercase(),
+                test_domain
             ))
             .expect("Failed to create email address");
             let description = ActiveValue::Set(format!(

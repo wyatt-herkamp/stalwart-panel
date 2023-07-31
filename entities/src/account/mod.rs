@@ -39,6 +39,7 @@ pub enum AccountType {
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = true)]
     pub id: i64,
+    #[sea_orm(column_type = "Text")]
     pub name: String,
     #[sea_orm(unique, column_type = "Text")]
     pub username: String,
@@ -46,17 +47,19 @@ pub struct Model {
     pub description: String,
     pub group_id: i64,
     #[serde(skip_serializing)]
+    #[sea_orm(column_type = "Text")]
     pub password: Password,
     #[sea_orm(default_value = "false")]
     pub require_password_change: bool,
     #[sea_orm(default_value = "0")]
     pub quota: i64,
-    #[sea_orm(default_value = "Individual", column_type = "Text")]
+    #[sea_orm(default_value = "individual", column_type = "Text")]
     pub account_type: AccountType,
     #[sea_orm(default_value = "true")]
     pub active: bool,
     #[sea_orm(unique, nullable, column_type = "Text")]
     pub backup_email: Option<EmailAddress>,
+    #[sea_orm(default_expr = "Expr::current_timestamp()")]
     pub created: DateTimeWithTimeZone,
 }
 
