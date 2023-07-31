@@ -1,23 +1,41 @@
 <template>
   <div v-if="user" id="sideBar">
     <div class="logo sideBarItem">
-      <router-link to="home">
+      <router-link
+        :to="{
+          name: 'home'
+        }"
+      >
         <img src="/favicon.ico" alt="logo" />
         Stalwart Panel
       </router-link>
     </div>
 
     <ul class="sideBarItem">
-      <li class="listOption">Welcome {{ pickName(user.name) }}</li>
-      <li class="listOption" v-if="user.group_permissions.modify_accounts">
-        <router-link
-          :to="{
-            name: 'accounts'
-          }"
-          >Accounts</router-link
-        >
-      </li>
-      <li class="listOption" v-if="user.group_permissions.manage_system">System</li>
+      <router-link
+        class="listOption"
+        :to="{
+          name: 'home'
+        }"
+      >
+        <li v-if="user.group_permissions.modify_accounts">Welcome {{ pickName(user.name) }}</li>
+      </router-link>
+      <router-link
+        class="listOption"
+        :to="{
+          name: 'accounts'
+        }"
+      >
+        <li v-if="user.group_permissions.modify_accounts">Accounts</li>
+      </router-link>
+      <router-link
+        class="listOption"
+        :to="{
+          name: 'home'
+        }"
+      >
+        <li v-if="user.group_permissions.modify_accounts">System</li>
+      </router-link>
     </ul>
     <div id="logout" class="sideBarItem">
       <div class="listOption" @click="logout">Logout</div>
@@ -100,6 +118,7 @@ a {
   font-weight: bold;
   cursor: pointer;
   border: transparent 1px solid;
+  margin: 0.25rem 0;
   &:hover {
     color: #00bd7e;
     border: white 1px solid;
