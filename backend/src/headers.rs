@@ -1,4 +1,4 @@
-use crate::{Error, Https};
+use crate::{Error, SharedConfig};
 use actix_web::http::header::{HOST, ORIGIN};
 use actix_web::web::Data;
 use actix_web::{FromRequest, HttpMessage};
@@ -44,8 +44,8 @@ impl Origin {
                 .map(|value| (value.to_string(), value.starts_with("https")))?
         } else if let Some(value) = req.headers().get(HOST) {
             let https = req
-                .app_data::<Data<Https>>()
-                .map(|v| *v.as_ref().as_ref())
+                .app_data::<Data<SharedConfig>>()
+                .map(|v| v.as_ref().https)
                 .unwrap_or_default();
             let value = value.to_str()?;
             let url = if https {

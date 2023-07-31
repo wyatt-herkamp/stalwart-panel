@@ -1,11 +1,11 @@
 use crate::email_service::{template, Email, EmailAccess, EmailDebug};
 use crate::headers::Origin;
-use ahash::{HashMap};
+use ahash::HashMap;
 use chrono::{DateTime, Local};
 
 use parking_lot::{Mutex, MutexGuard};
 use rand::distributions::Distribution;
-use serde::{Serialize};
+use serde::Serialize;
 use std::ops::DerefMut;
 use std::sync::Arc;
 use tracing::debug;

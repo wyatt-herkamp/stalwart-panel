@@ -1,0 +1,18 @@
+[package]
+name = "test_tool"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+serde = { version = "1" ,features = ["derive"]}
+serde_json = "1"
+toml = "0.7"
+regex = "1"
+tokio = { version = "1", features = ["full"] }
+entities = {path = "../entities"}
+utils = {path = "../utils", features = ["sea-orm"]}
+sea-orm = { version = "0.12", features = ["runtime-tokio-rustls","macros","sqlx-mysql","sqlx-postgres"] }
+reqwest = { version = "0.11",features = ["json"] }
+clap = { version = "4",features = ["derive"] }

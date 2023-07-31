@@ -6,3 +6,5 @@ test_data/stalwart-config-test.toml
 node_modules
 panel-frontend/dist
 .vscode
+test_tool/target
+test_tool/Cargo.lock

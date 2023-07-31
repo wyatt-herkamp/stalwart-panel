@@ -5,6 +5,7 @@ members = [
     "migration",
     "setup-tool",
 "backend"]
+exclude = ["test_tool"]
 
 
 [workspace.dependencies]

@@ -2,6 +2,7 @@ use chrono::Duration;
 use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
 
+use crate::database::password::PasswordType;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -127,6 +128,8 @@ pub struct Settings {
     pub default_group: i64,
     pub root_group: i64,
     #[serde(default)]
+    pub password_hash_for_new_passwords: PasswordType,
+    #[serde(default)]
     pub require_password_reset: PasswordReset,
     #[serde(default)]
     pub session_manager: SessionManager,
@@ -144,6 +147,7 @@ impl Settings {
             postmaster_address,
             default_group: 1,
             root_group: 2,
+            password_hash_for_new_passwords: Default::default(),
             require_password_reset: Default::default(),
             session_manager: Default::default(),
             is_https: false,

@@ -1,34 +1,57 @@
 use argon2::password_hash::{Error, SaltString};
 use argon2::{Argon2, PasswordHasher, PasswordVerifier};
 use rand::rngs::OsRng;
+use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Display};
+use std::mem;
 use std::ops::Deref;
 use std::str::FromStr;
 use strum_macros::{Display as StrumDisplay, IntoStaticStr};
 use thiserror::Error;
 
-/// Hash Types supported by Stalwart [Info](https://stalw.art/docs/directory/users#passwords)
+/// Hash Types supported by Stalwart [More Info](https://stalw.art/docs/directory/users#passwords)
 ///
-/// TODO: Add all supported hash types
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, IntoStaticStr, StrumDisplay)]
-pub enum PasswordHash {
+/// Types [PasswordType::PlainText] and [PasswordType::None] are not checked by panel
+/// and will always return false
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    IntoStaticStr,
+    StrumDisplay,
+    Serialize,
+    Deserialize,
+    Default,
+)]
+pub enum PasswordType {
     /// Argon2 Hash. Recommended and What Stalwart Panel uses
+    #[default]
     Argon2,
+    /// Please refer to [PasswordType::SHA512]
     SHA256,
+    /// This algorithm can burn in hell for all I care
+    ///
+    /// I lost an hour of my life because it had a false negative
     SHA512,
+    /// I am not letting this password be checked. It is too insecure.
+    /// This element exists just for the importing of old passwords
+    ///
+    /// I like my code to be secure unlike me as a person
+    PlainText,
+    /// Default for all other types. This is so upon importing it won't crash
     None,
-}
-impl Default for PasswordHash {
-    fn default() -> Self {
-        PasswordHash::Argon2
-    }
 }
 #[derive(Debug, Error)]
 pub enum PasswordErrors {
     #[error("Internal password error: {0}")]
     InternalPasswordError(String),
     #[error("Unsupported hash type: {0}")]
-    UnsupportedHashType(PasswordHash),
+    UnsupportedHashType(PasswordType),
 }
 impl From<argon2::Error> for PasswordErrors {
     fn from(value: argon2::Error) -> Self {
@@ -40,16 +63,22 @@ impl From<argon2::password_hash::Error> for PasswordErrors {
         PasswordErrors::InternalPasswordError(value.to_string())
     }
 }
-impl PasswordHash {
+impl PasswordType {
     pub fn identify(password: &str) -> Self {
         if password.starts_with("$argon2") {
-            PasswordHash::Argon2
+            PasswordType::Argon2
         } else if password.starts_with("$5$") {
-            PasswordHash::SHA256
+            PasswordType::SHA256
         } else if password.starts_with("$6$") {
-            PasswordHash::SHA512
+            PasswordType::SHA512
+        } else if password.starts_with("{PLAIN}")
+            || password.starts_with("{plain}")
+            || password.starts_with("{plaintext}")
+            || password.starts_with("{PLAINTEXT}")
+        {
+            PasswordType::PlainText
         } else {
-            PasswordHash::None
+            PasswordType::None
         }
     }
 }
@@ -57,7 +86,7 @@ impl PasswordHash {
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Password {
     pub(crate) password: String,
-    pub(crate) hash_type: PasswordHash,
+    pub(crate) hash_type: PasswordType,
 }
 impl Debug for Password {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -67,6 +96,30 @@ impl Debug for Password {
     }
 }
 impl Password {
+    pub fn hash(&mut self, method: PasswordType) -> Result<(), PasswordErrors> {
+        let password = mem::take(&mut self.password);
+        let result = Self::new_hash(password, method)?;
+        *self = result;
+        Ok(())
+    }
+    pub fn new_hash(
+        password: impl AsRef<str>,
+        method: PasswordType,
+    ) -> Result<Self, PasswordErrors> {
+        match method {
+            PasswordType::Argon2 => {
+                let salt = SaltString::generate(&mut OsRng);
+                let argon2 = Argon2::default();
+                let password = password.as_ref();
+                let hash = argon2.hash_password(password.as_bytes(), &salt)?;
+                Ok(Password {
+                    password: hash.to_string(),
+                    hash_type: PasswordType::Argon2,
+                })
+            }
+            _ => Err(PasswordErrors::UnsupportedHashType(method)),
+        }
+    }
     pub fn new_argon2(password: impl AsRef<[u8]>) -> Result<Self, PasswordErrors> {
         let salt = SaltString::generate(&mut OsRng);
         let argon2 = Argon2::default();
@@ -74,13 +127,13 @@ impl Password {
             .hash_password(password.as_ref(), &salt)
             .map(|v| Password {
                 password: v.to_string(),
-                hash_type: PasswordHash::Argon2,
+                hash_type: PasswordType::Argon2,
             })
             .map_err(PasswordErrors::from)
     }
     pub fn new_hashed(password: impl Into<String>) -> Self {
         let password = password.into();
-        let hash_type = PasswordHash::identify(&password);
+        let hash_type = PasswordType::identify(&password);
         Password {
             password,
             hash_type,
@@ -88,11 +141,11 @@ impl Password {
     }
     pub fn check_password(&self, password: impl AsRef<str>) -> Result<bool, PasswordErrors> {
         match &self.hash_type {
-            PasswordHash::Argon2 => self
+            PasswordType::Argon2 => self
                 .check_argon2(password.as_ref())
                 .map_err(PasswordErrors::from),
-            PasswordHash::SHA256 => self.check_sha256_crypt(password),
-            PasswordHash::SHA512 => self.check_sha512_crypt(password),
+            PasswordType::SHA256 => self.check_sha256_crypt(password),
+            PasswordType::SHA512 => self.check_sha512_crypt(password),
             v => {
                 log::error!("Unsupported hash type: {:?}", self.hash_type);
                 Err(PasswordErrors::UnsupportedHashType(v.clone()))
@@ -133,6 +186,9 @@ impl Password {
         } else {
             Ok(false)
         }
+    }
+    pub fn hash_type(&self) -> PasswordType {
+        self.hash_type
     }
 }
 

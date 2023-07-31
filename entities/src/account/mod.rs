@@ -42,18 +42,18 @@ pub struct Model {
     pub name: String,
     #[sea_orm(unique, column_type = "Text")]
     pub username: String,
-    #[sea_orm(default = "", column_type = "Text")]
+    #[sea_orm(default_value = "", column_type = "Text")]
     pub description: String,
     pub group_id: i64,
     #[serde(skip_serializing)]
     pub password: Password,
-    #[sea_orm(default = "false")]
+    #[sea_orm(default_value = "false")]
     pub require_password_change: bool,
-    #[sea_orm(default = "0")]
+    #[sea_orm(default_value = "0")]
     pub quota: i64,
     #[sea_orm(default_value = "Individual", column_type = "Text")]
     pub account_type: AccountType,
-    #[sea_orm(default = "true")]
+    #[sea_orm(default_value = "true")]
     pub active: bool,
     #[sea_orm(unique, nullable, column_type = "Text")]
     pub backup_email: Option<EmailAddress>,

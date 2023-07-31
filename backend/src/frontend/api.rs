@@ -2,8 +2,8 @@ use crate::auth::password_reset::PasswordResetManager;
 use crate::auth::session::{Session, SessionManager};
 
 use crate::headers::Origin;
-use crate::Result;
 use crate::{DatabaseConnection, Error};
+use crate::{Result, SharedConfig};
 use actix_web::cookie::{CookieBuilder, Expiration, SameSite};
 
 use actix_web::web::{Data, ServiceConfig};
@@ -141,6 +141,7 @@ pub async fn submit_password_reset(
     post: web::Form<PasswordResetSubmit>,
     database: DatabaseConnection,
     password_reset: Data<PasswordResetManager>,
+    shared_settings: Data<SharedConfig>,
 ) -> Result<HttpResponse> {
     if let Some(value) = password_reset.get_request(get.as_ref()) {
         let password = post.into_inner().password;
@@ -152,10 +153,12 @@ pub async fn submit_password_reset(
             return Ok(HttpResponse::NotFound().finish());
         };
         user_model.require_password_change = ActiveValue::set(false);
-        user_model.password = ActiveValue::set(Password::new_argon2(password).map_err(|e| {
-            warn!("Failed to hash password: {}", e);
-            Error::BadRequest("Failed to hash password")
-        })?);
+        user_model.password = ActiveValue::set(
+            Password::new_hash(password, shared_settings.password_hash).map_err(|e| {
+                warn!("Failed to hash password: {}", e);
+                Error::BadRequest("Failed to hash password")
+            })?,
+        );
 
         drop(value);
         password_reset.remove_request(get.as_ref());

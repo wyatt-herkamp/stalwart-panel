@@ -34,6 +34,7 @@ use crate::email_service::EmailService;
 pub use error::WebsiteError as Error;
 use tracing_subscriber::layer::Filter;
 use tracing_subscriber::prelude::*;
+use utils::database::password::PasswordType;
 
 pub type Result<T> = std::result::Result<T, Error>;
 #[derive(Parser)]
@@ -46,31 +47,16 @@ struct Command {
     #[clap(long, default_value = "false")]
     add_defaults_to_config: bool,
 }
-#[derive(Clone, Copy, Debug)]
-pub struct Https(bool);
-impl Deref for Https {
-    type Target = bool;
 
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-impl AsRef<bool> for Https {
-    fn as_ref(&self) -> &bool {
-        &self.0
-    }
-}
-
-impl Into<bool> for Https {
-    fn into(self) -> bool {
-        self.0
-    }
-}
 pub type DatabaseConnection = Data<sea_orm::DatabaseConnection>;
 /// Mutex's are slightly faster than RwLocks and we don't really need to have multiple readers
 /// This could be changed in the future if we need to have multiple readers
 pub type SlalwartManager = Data<Mutex<StalwartManager>>;
-
+#[derive(Clone)]
+pub struct SharedConfig {
+    password_hash: PasswordType,
+    https: bool,
+}
 #[actix_web::main]
 async fn main() -> io::Result<()> {
     let collector = tracing_subscriber::fmt()
@@ -117,11 +103,15 @@ async fn main() -> io::Result<()> {
         requests: Default::default(),
     });
 
-    let http_or_https = Data::new(Https(if server_config.tls.is_some() {
-        true
-    } else {
-        server_config.is_https
-    }));
+    let shared_config = Data::new(SharedConfig {
+        password_hash: server_config.password_hash_for_new_passwords,
+        https: if server_config.tls.is_some() {
+            true
+        } else {
+            server_config.is_https
+        },
+    });
+
     let server = HttpServer::new(move || {
         let cors = Cors::default()
             .allow_any_origin()
@@ -133,7 +123,7 @@ async fn main() -> io::Result<()> {
             .app_data(stalwart_manager.clone())
             .app_data(session_manager.clone())
             .app_data(email.clone())
-            .app_data(http_or_https.clone())
+            .app_data(shared_config.clone())
             .app_data(password_reset.clone())
             .wrap(TracingLogger::default())
             .wrap(cors)
