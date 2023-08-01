@@ -9,5 +9,7 @@ pub fn init(service: &mut ServiceConfig) {
         .service(getters::get_full_user)
         .service(setters::password_change)
         .service(setters::update_active)
-        .service(setters::update_core);
+        .service(setters::update_core)
+        .service(setters::password_change)
+        .service(setters::new);
 }
