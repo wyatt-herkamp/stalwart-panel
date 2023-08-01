@@ -8,8 +8,8 @@ pub fn init(service: &mut ServiceConfig) {
         .service(getters::list)
         .service(getters::get_full_user)
         .service(setters::password_change)
+        .service(setters::set_password)
         .service(setters::update_active)
         .service(setters::update_core)
-        .service(setters::password_change)
         .service(setters::new);
 }

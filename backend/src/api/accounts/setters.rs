@@ -152,7 +152,7 @@ pub struct NewPassword {
     pub password: String,
 }
 
-#[put("/{user}/password")]
+#[put("/password/{user}")]
 pub async fn set_password(
     auth: Authentication,
     data: web::Form<NewPassword>,
