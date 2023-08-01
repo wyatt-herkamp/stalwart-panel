@@ -9,14 +9,9 @@ import { ref, watch } from 'vue'
 import '@/assets/styles/form.scss'
 const props = defineProps<{
   id: string
-  modelValue: string
 }>()
-const value = ref(props.modelValue)
-const emit = defineEmits<{
-  (event: 'update:modelValue', modelValue: string): void
-}>()
-watch(value, (newValue) => {
-  emit('update:modelValue', newValue)
+let value = defineModel<string>({
+  required: true
 })
 </script>
 

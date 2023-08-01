@@ -47,8 +47,8 @@ const props = defineProps<{
 }>()
 
 const form: Ref<Form> = ref({
-  username: props.username ? props.username : undefined,
-  password: undefined
+  username: props.username ? props.username : '',
+  password: ''
 })
 const isEmailAddress = computed(() => {
   if (form.value.username) {

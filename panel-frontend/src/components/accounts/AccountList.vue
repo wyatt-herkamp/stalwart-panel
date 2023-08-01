@@ -1,5 +1,5 @@
 <template>
-  <AccountsListTable :accounts="accounts" v-if="accounts" />
+  <AccountsListGrid :accounts="accounts" v-if="accounts" />
   <div id="errorWhileLoading" v-else>An error occurred while loading the accounts.</div>
 </template>
 <script setup lang="ts">
@@ -8,6 +8,7 @@ import type { AccountSimple } from '@/types/user'
 import http from '@/http'
 import router from '@/router'
 import AccountsListTable from '@/components/accounts/AccountsListTable.vue'
+import AccountsListGrid from '@/components/accounts/AccountsListGrid.vue'
 
 const accounts = ref<AccountSimple[] | undefined>([])
 

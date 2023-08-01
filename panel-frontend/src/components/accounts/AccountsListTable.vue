@@ -86,6 +86,7 @@ table {
   table-layout: fixed;
   overflow: hidden;
   text-overflow: ellipsis;
+  background-color: $table-background;
 }
 @media screen and (max-width: 1000px) {
   #accountsBox {
@@ -118,10 +119,15 @@ th {
   padding: 8px;
 }
 tr {
-  background-color: $table-odd-row;
   cursor: pointer;
   &:nth-child(even) {
     background-color: $table-even-row;
+  }
+  &:nth-child(odd) {
+    background-color: $table-odd-row;
+  }
+  &:first-child {
+    background-color: $table-header;
   }
 }
 </style>
