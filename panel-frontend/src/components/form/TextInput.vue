@@ -10,7 +10,7 @@ import '@/assets/styles/form.scss'
 const props = defineProps<{
   id: string
 }>()
-let value = defineModel<string>({
+let value = defineModel<string | undefined>({
   required: true
 })
 </script>

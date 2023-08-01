@@ -28,7 +28,7 @@
           })
         "
       >
-        <div class="col" :title="account.id">{{ account.id }}</div>
+        <div class="col">{{ account.id }}</div>
         <div class="col" :title="account.name">{{ account.name }}</div>
         <div class="col" :title="account.username">{{ account.username }}</div>
         <div class="col" :title="account.primary_email">
@@ -61,7 +61,9 @@ function sortList(a: AccountSimple, b: AccountSimple) {
     case 'username':
       return a.username.localeCompare(b.username)
     case 'primary_email':
-      return a.primary_email?.localeCompare(b.primary_email ?? '')
+      return (a.primary_email ? a.primary_email : '').localeCompare(
+        b.primary_email ? b.primary_email : ''
+      )
     default:
       return 0
   }
