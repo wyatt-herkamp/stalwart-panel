@@ -1,6 +1,11 @@
+use super::Column as EmailColumn;
 use crate::emails::EmailType;
 use crate::{EmailEntity, EmailModel};
-use sea_orm::{ConnectionTrait, DbErr, EntityTrait};
+use sea_orm::sea_query::Query;
+use sea_orm::ColumnTrait;
+use sea_orm::{
+    ConnectionTrait, DbErr, EntityTrait, Order, QueryFilter, QueryOrder, QueryTrait, Values,
+};
 use sea_orm::{DbBackend, Statement};
 use serde::Serialize;
 use std::ops::Deref;
@@ -14,29 +19,13 @@ impl Emails {
         connection: &impl ConnectionTrait,
         user_id: i64,
     ) -> Result<Self, DbErr> {
-        match connection.get_database_backend() {
-            DbBackend::MySql => {
-                EmailEntity::find()
-                    .from_raw_sql(Statement::from_sql_and_values(
-                        DbBackend::MySql,
-                        r#"SELECT * FROM "emails" WHERE "account" = ?
-                                    ORDER BY case when emails.email_type = 'primary' then 1 else 2 end,
-                                          emails.email_type ASC"#,
-                        [user_id.into()],
-                    ))
-            }
-            DbBackend::Postgres => {
-                EmailEntity::find()
-                    .from_raw_sql(Statement::from_sql_and_values(
-                        DbBackend::Postgres,
-                        r#"SELECT * FROM "emails" WHERE "account" = $1
-                                    ORDER BY case when emails.email_type = 'primary' then 1 else 2 end,
-                                          emails.email_type ASC"#,
-                        [user_id.into()],
-                    ))
-            }
-            v => unimplemented!("Unsupported database backend: {:?}", v),
-        }.all(connection)
+        EmailEntity::find()
+            .filter(EmailColumn::Account.eq(user_id))
+            .order_by(
+                EmailColumn::EmailType,
+                Order::Field(Values(vec![EmailType::Primary.into()])),
+            )
+            .all(connection)
             .await
             .map(Self)
     }
