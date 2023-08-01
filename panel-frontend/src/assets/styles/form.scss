@@ -19,3 +19,8 @@ input {
     }
   }
 }
+input[disabled]{
+  background-color: #2d2d2d;
+    color: #000;
+    font-weight: bold;
+}

@@ -2,7 +2,7 @@
   <div class="switchBox">
     <label :for="id"><slot /></label>
     <label class="switch">
-      <input v-bind="$attrs" :id="id" type="checkbox" />
+      <input v-model="value" v-bind="$attrs" :id="id" type="checkbox" />
       <span class="slider"></span>
     </label>
   </div>
@@ -12,21 +12,15 @@ import { ref, watch } from 'vue'
 
 const props = defineProps<{
   id: string
-  modelValue: boolean
 }>()
-const value = ref(props.modelValue)
-const emit = defineEmits<{
-  (event: 'update:modelValue', modelValue: boolean): void
-}>()
-watch(value, (newValue) => {
-  emit('update:modelValue', newValue)
+let value = defineModel<boolean>({
+  required: true
 })
 </script>
 
 <style scoped lang="scss">
 @import '@/assets/styles/variables';
 .switchBox {
-  background-color: $table-background;
   margin: 1rem 2rem;
   display: flex;
   flex-direction: row;

@@ -3,15 +3,19 @@
     <div id="account" v-if="account">
       <form v-on:submit.prevent>
         <FormGroup>
-          <TextInput v-model="account.name" disabled id="username">Name</TextInput>
-          <TextInput v-model="account.username" disabled id="username">Username</TextInput>
+          <TextInput v-model="account.name" id="username">Name</TextInput>
+          <TextInput
+            v-model="account.username"
+            disabled
+            id="username"
+            title="Renaming Users is not possible yet"
+            >Username</TextInput
+          >
         </FormGroup>
 
-        <TextInput v-model="account.description" disabled id="description">Description</TextInput>
+        <TextInput v-model="account.description" id="description">Description</TextInput>
 
-        <TextInput v-model="account.backup_email" disabled id="backup_email"
-          >Backup Email</TextInput
-        >
+        <TextInput v-model="account.backup_email" id="backup_email">Backup Email</TextInput>
 
         <FormGroup>
           <Number v-model="account.quota" id="quota">Quota</Number>

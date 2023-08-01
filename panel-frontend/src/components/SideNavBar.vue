@@ -1,46 +1,55 @@
 <template>
-  <div v-if="user" id="sideBar">
-    <div class="logo sideBarItem">
-      <router-link
-        :to="{
-          name: 'home'
-        }"
-      >
-        <img src="/favicon.ico" alt="logo" />
-        Stalwart Panel
-      </router-link>
-    </div>
+  <transition>
+    <div id="sideBar" v-if="value && user">
+      <div id="close" class="sideBarItem" @click="value = false">
+        <font-awesome-icon icon="fa-solid fa-x" />
+        <span> Close </span>
+      </div>
+      <div class="logo sideBarItem">
+        <router-link
+          :to="{
+            name: 'home'
+          }"
+        >
+          <img src="/favicon.ico" alt="logo" />
+          Stalwart Panel
+        </router-link>
+      </div>
 
-    <ul class="sideBarItem">
-      <router-link
-        class="listOption"
-        :to="{
-          name: 'home'
-        }"
-      >
-        <li v-if="user.group_permissions.modify_accounts">Welcome {{ pickName(user.name) }}</li>
-      </router-link>
-      <router-link
-        class="listOption"
-        :to="{
-          name: 'accounts'
-        }"
-      >
-        <li v-if="user.group_permissions.modify_accounts">Accounts</li>
-      </router-link>
-      <router-link
-        class="listOption"
-        :to="{
-          name: 'home'
-        }"
-      >
-        <li v-if="user.group_permissions.modify_accounts">System</li>
-      </router-link>
-    </ul>
-    <div id="logout" class="sideBarItem">
-      <div class="listOption" @click="logout">Logout</div>
+      <ul class="sideBarItem">
+        <router-link
+          @click="value = false"
+          class="listOption"
+          :to="{
+            name: 'home'
+          }"
+        >
+          <li v-if="user.group_permissions.modify_accounts">Welcome {{ pickName(user.name) }}</li>
+        </router-link>
+        <router-link
+          @click="value = false"
+          class="listOption"
+          :to="{
+            name: 'accounts'
+          }"
+        >
+          <li v-if="user.group_permissions.modify_accounts">Accounts</li>
+        </router-link>
+        <router-link
+          @click="value = false"
+          class="listOption"
+          :to="{
+            name: 'home'
+          }"
+        >
+          <li v-if="user.group_permissions.modify_accounts">System</li>
+        </router-link>
+      </ul>
+      <div id="logout" class="sideBarItem">
+        <div class="listOption" @click="logout">Logout</div>
+      </div>
     </div>
-  </div>
+  </transition>
 </template>
 
 <script setup lang="ts">
@@ -50,11 +59,15 @@ import { sessionStore } from '@/stores/session'
 import router from '@/router/index'
 import { Ref, ref, watch } from 'vue'
 
+let value = defineModel<boolean>({
+  required: true
+})
 let session = sessionStore()
 const user: Ref<PanelUser | undefined> = ref(session.user)
 watch(session, (value) => {
   user.value = value.user
 })
+
 function logout() {
   session.logout()
   router.resolve({ name: 'login' })
@@ -74,6 +87,10 @@ a {
   }
 }
 #sideBar {
+  // Transition Show
+
+  // Transition Hide
+
   display: flex;
   flex-direction: column;
   border-right: white 2px solid;
@@ -137,6 +154,37 @@ ul {
     &:not(:first-child) {
       margin-top: 1rem;
     }
+  }
+}
+.v-enter-active,
+.v-leave-active {
+  transition: transform 0.5s ease;
+}
+
+.v-enter-from,
+.v-leave-to {
+  transform: translateX(-100%);
+  transition: all 150ms ease-in 0s;
+}
+
+#close {
+  display: none;
+
+  &:hover {
+    cursor: pointer;
+  }
+
+  font-weight: bold;
+}
+@media (max-width: 1024px) {
+  #close {
+    display: block;
+  }
+  #sideBar {
+    position: absolute;
+    top: 0;
+    background-color: $background-color;
+    height: 100vh;
   }
 }
 </style>

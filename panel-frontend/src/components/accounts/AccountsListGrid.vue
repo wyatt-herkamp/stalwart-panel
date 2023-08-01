@@ -7,12 +7,34 @@
       autofocus
       placeholder="Search by Name, Username, or Primary Email Address"
     />
-    <div id="accounts">
+    <div id="accounts" class="betterScroll">
       <div class="row" id="header">
-        <div class="col" @click="sortBy = 'id'" title="Sort by ID">ID #</div>
-        <div class="col" @click="sortBy = 'name'" title="Sort by Name">Name</div>
-        <div class="col" @click="sortBy = 'username'" title="Sort by Username">Username</div>
-        <div class="col" @click="sortBy = 'primary_email'" title="Sort by Primary Email">
+        <div
+          :class="['col', { sorted: sortBy === 'id' }]"
+          @click="sortBy = 'id'"
+          title="Sort by ID"
+        >
+          ID #
+        </div>
+        <div
+          :class="['col', { sorted: sortBy === 'name' }]"
+          @click="sortBy = 'name'"
+          title="Sort by Name"
+        >
+          Name
+        </div>
+        <div
+          :class="['col', { sorted: sortBy === 'username' }]"
+          @click="sortBy = 'username'"
+          title="Sort by Username"
+        >
+          Username
+        </div>
+        <div
+          :class="['col', { sorted: sortBy === 'primary_email' }]"
+          @click="sortBy = 'primary_email'"
+          title="Sort by Primary Email"
+        >
           Primary Email
         </div>
         <div class="col description">Description</div>
@@ -95,7 +117,6 @@ const filteredTable = computed(() => {
 #accountsBox {
   padding: 0 1rem;
   box-sizing: border-box;
-  height: 100vh;
   display: flex;
   flex-direction: column;
 }
@@ -104,6 +125,16 @@ const filteredTable = computed(() => {
   margin: 1rem 0;
   box-sizing: border-box;
 }
+@media screen and (min-width: 1024px) {
+  #accounts {
+    max-height: calc(100vh - 6rem);
+  }
+}
+@media screen and (max-width: 1024px) {
+  #accounts {
+    max-height: calc(100vh - 8rem);
+  }
+}
 #accounts {
   background-color: $table-background;
   padding: 1rem;
@@ -111,11 +142,9 @@ const filteredTable = computed(() => {
   grid-template-columns: 1fr;
   grid-template-rows: auto;
   grid-gap: 0.5rem;
-  overflow-y: scroll;
-  max-height: calc(100vh - 6rem);
+  overflow-y: auto;
+
   .row {
-    display: grid;
-    grid-template-columns: 0.1fr 0.5fr 0.5fr 0.5fr 1fr;
     height: 2rem;
     cursor: pointer;
     text-align: left;
@@ -123,8 +152,6 @@ const filteredTable = computed(() => {
   .col {
     padding: 0.5rem 0.5rem;
     // Hide overflow
-    overflow: hidden;
-    text-overflow: ellipsis;
     white-space: nowrap;
   }
   #header {
@@ -148,6 +175,11 @@ const filteredTable = computed(() => {
     }
   }
   .item {
+    .col {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
     cursor: pointer;
     border: transparent 1px solid;
     border-radius: 0.25rem;
@@ -160,6 +192,41 @@ const filteredTable = computed(() => {
     }
     &:nth-child(even) {
       background-color: $table-even-row;
+    }
+  }
+}
+.sorted {
+  border: #00bd7e 1px solid !important;
+}
+@media screen and (min-width: 1000px) {
+  .row {
+    display: grid;
+    grid-template-columns: 0.1fr 0.5fr 0.5fr 0.5fr 1fr;
+  }
+}
+@media screen and (max-width: 600px) {
+  .row {
+    display: grid;
+    grid-template-columns: 0.5fr 1fr 1fr;
+    grid-gap: 1rem;
+  }
+  .col {
+    &:nth-child(4) {
+      display: none;
+    }
+    &:last-child {
+      display: none;
+    }
+  }
+}
+@media screen and (max-width: 1000px) and (min-width: 600px) {
+  .row {
+    display: grid;
+    grid-template-columns: 0.1fr 1fr 1fr 1fr;
+  }
+  .col {
+    &:last-child {
+      display: none;
     }
   }
 }
