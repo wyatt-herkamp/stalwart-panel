@@ -2,16 +2,21 @@ use crate::auth::password_reset::PasswordResetManager;
 use crate::auth::permissions::Permissions;
 use crate::auth::Authentication;
 use crate::headers::Origin;
-use crate::{DatabaseConnection, Error, Result};
+use crate::{DatabaseConnection, Error, Result, SharedConfig};
 
 use actix_web::web::Data;
 use actix_web::{put, web, HttpResponse};
 use entities::account::AccountType;
+use entities::account::ActiveModel;
 use entities::{AccountEntity, AccountModel, ActiveAccountModel};
-use sea_orm::{ActiveModelTrait, ActiveValue, EntityTrait, IntoActiveModel, TryIntoModel};
+use sea_orm::sea_query::OnConflict;
+use sea_orm::{
+    ActiveModelTrait, ActiveValue, DbErr, DeriveIntoActiveModel, EntityTrait, InsertResult,
+    IntoActiveModel, TryIntoModel,
+};
 use serde::{Deserialize, Serialize};
-use utils::database::EmailAddress;
-
+use serde_json::json;
+use utils::database::{EmailAddress, Password};
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct UpdateAccount {
     pub name: Option<String>,
@@ -41,7 +46,7 @@ impl UpdateAccount {
     }
 }
 
-#[put("/account/update/{user}/core")]
+#[put("/update/{user}/core")]
 pub async fn update_core(
     user: web::Path<i64>,
     auth: Authentication,
@@ -65,7 +70,7 @@ pub async fn update_core(
     Ok(HttpResponse::NoContent().finish())
 }
 
-#[put("/account/update/{user}/active/{active}")]
+#[put("/update/{user}/active/{active}")]
 pub async fn update_active(
     user: web::Path<(i64, bool)>,
     auth: Authentication,
@@ -90,11 +95,12 @@ pub async fn update_active(
 
     Ok(HttpResponse::NoContent().finish())
 }
+
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct PasswordChange {
     pub send_email_to: Option<EmailAddress>,
 }
-#[put("/account/update/{user}/password-change")]
+#[put("/update/{user}/force-password-change")]
 pub async fn password_change(
     user: web::Path<i64>,
     auth: Authentication,
@@ -125,4 +131,100 @@ pub async fn password_change(
     }
 
     Ok(HttpResponse::NoContent().finish())
+}
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct NewAccount {
+    pub name: String,
+    pub username: String,
+    #[serde(default)]
+    pub description: String,
+    pub quota: i64,
+    #[serde(default)]
+    pub require_password_change: bool,
+    #[serde(default)]
+    pub account_type: AccountType,
+    pub backup_email: Option<EmailAddress>,
+    pub group: i64,
+    pub password: String,
+}
+#[derive(Deserialize)]
+pub struct NewPassword {
+    pub password: String,
+}
+
+#[put("/{user}/password")]
+pub async fn set_password(
+    auth: Authentication,
+    data: web::Form<NewPassword>,
+    user: web::Path<i64>,
+    database: DatabaseConnection,
+    settings: Data<SharedConfig>,
+) -> Result<HttpResponse> {
+    if !auth.can_manage_users() {
+        return Ok(HttpResponse::Forbidden().finish());
+    }
+
+    let data = data.into_inner();
+    let password = Password::new_hash(data.password, settings.password_hash)
+        .map_err(|_| Error::UnableToHashPassword)?;
+
+    let mut user: ActiveAccountModel = AccountEntity::find_by_id(user.into_inner())
+        .one(database.as_ref())
+        .await?
+        .map(|x| x.into_active_model())
+        .ok_or(Error::NotFound)?;
+
+    user.password = ActiveValue::Set(password);
+
+    user.save(database.as_ref()).await?;
+
+    Ok(HttpResponse::NoContent().finish())
+}
+#[put("/new")]
+pub async fn new(
+    auth: Authentication,
+    data: web::Json<NewAccount>,
+    database: DatabaseConnection,
+    settings: Data<SharedConfig>,
+) -> Result<HttpResponse> {
+    if !auth.can_manage_users() {
+        return Ok(HttpResponse::Forbidden().finish());
+    }
+
+    let data = data.into_inner();
+    let password = Password::new_hash(data.password, settings.password_hash)
+        .map_err(|_| Error::UnableToHashPassword)?;
+    let user = ActiveModel {
+        id: ActiveValue::NotSet,
+        name: ActiveValue::Set(data.name),
+        username: ActiveValue::Set(data.username),
+        description: ActiveValue::Set(data.description),
+        quota: ActiveValue::Set(data.quota),
+        require_password_change: ActiveValue::Set(data.require_password_change),
+        account_type: ActiveValue::Set(data.account_type),
+        backup_email: ActiveValue::Set(data.backup_email),
+        active: Default::default(),
+        group_id: ActiveValue::Set(data.group),
+        created: Default::default(),
+        password: ActiveValue::Set(password),
+    };
+
+    let result = AccountEntity::insert(user)
+        .on_conflict(
+            OnConflict::columns(vec![entities::account::Column::Username])
+                .do_nothing()
+                .to_owned(),
+        )
+        .exec(database.as_ref())
+        .await;
+
+    match result {
+        Ok(ok) => {
+            let id = ok.last_insert_id;
+            Ok(HttpResponse::Created().json(json!({
+                "id": id
+            })))
+        }
+        Err(_) => Ok(HttpResponse::Conflict().finish()),
+    }
 }

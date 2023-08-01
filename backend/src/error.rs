@@ -29,6 +29,9 @@ pub enum WebsiteError {
     #[error("Not Found")]
     #[status_code(NOT_FOUND)]
     NotFound,
+    #[error("Unable to hash password")]
+    #[status_code(INTERNAL_SERVER_ERROR)]
+    UnableToHashPassword,
 }
 
 /// Implemented for responses that can partially fail.
