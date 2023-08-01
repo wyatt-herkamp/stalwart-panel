@@ -1,82 +1,71 @@
 <template>
   <main>
     <div id="account" v-if="account">
-      <form v-on:submit.prevent>
-        <FormGroup>
-          <TextInput v-model="account.name" id="username">Name</TextInput>
-          <TextInput
-            v-model="account.username"
-            disabled
-            id="username"
-            title="Renaming Users is not possible yet"
-            >Username</TextInput
-          >
-        </FormGroup>
+      <div id="settings">
+        <div id="generalAccountSettings" class="settingsValue">
+          <form v-on:submit.prevent>
+            <div id="headerAndSubmit">
+              <h3>General Account Settings</h3>
 
-        <TextInput v-model="account.description" id="description">Description</TextInput>
+              <SubmitButton v-if="hasChanged">Update Account</SubmitButton>
+            </div>
+            <TextInput v-model="formUser.name" id="username">Name</TextInput>
 
-        <TextInput v-model="account.backup_email" id="backup_email">Backup Email</TextInput>
+            <TextInput v-model="formUser.backup_email" id="backup_email">Backup Email</TextInput>
 
-        <FormGroup>
-          <Number v-model="account.quota" id="quota">Quota</Number>
-          <!-- TODO: Make this a dropdown -->
-          <DropDownOptions
-            v-model="account.account_type"
-            id="account-type"
-            :values="enumToOptions(AccountType)"
-            >Account Type</DropDownOptions
-          >
-        </FormGroup>
-        <FormGroup>
-          <Switch v-model="account.requires_password_change" id="requires-password-change"
-            >Require Password Change</Switch
-          >
-          <Switch v-model="account.active" id="active">Active</Switch>
-        </FormGroup>
-      </form>
+            <Number v-model="formUser.quota" id="quota">Quota</Number>
 
-      <div class="emails" id="emailList">
-        <h2>Emails</h2>
-        <table>
-          <tr>
-            <th>Email Address</th>
-            <th>Email Type</th>
-            <th class="emailActions">Actions</th>
-          </tr>
-          <tr v-for="(email, index) in emails" :key="email.id">
-            <td>
-              <input type="text" v-model="email.email_address" :id="'email-address-' + email.id" />
-            </td>
-            <td>
-              <DropDownOptionsInner
-                v-model="email.email_type"
-                :id="'email-type-' + email.id"
-                :values="emailOptions"
-                >Email Type</DropDownOptionsInner
+            <DropDownOptions
+              v-model="formUser.account_type"
+              id="account-type"
+              :values="enumToOptions(AccountType)"
+              >Account Type</DropDownOptions
+            >
+            <TextArea v-model="formUser.description" id="description">Description</TextArea>
+          </form>
+        </div>
+
+        <div id="actions" class="settingsValue">
+          <div id="passwordUpdates" class="accountActionSection">
+            <form @submit.prevent="updatePassword">
+              <h3>Change Password</h3>
+              <Password v-model="changePassword.password" id="password">Password</Password>
+              <Password v-model="changePassword.confirmPassword" id="confirm-password"
+                >Confirm Password</Password
               >
-            </td>
-            <td class="emailActions">
-              <button @click="deleteEmail(emails[index])">Delete</button>
-              <button @click="addOrUpdateEmail(emails[index])">Update</button>
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <input type="text" v-model="newEmailForm.email_address" id="new-email-address" />
-            </td>
-            <td>
-              <DropDownOptionsInner
-                v-model="newEmailForm.email_type"
-                id="new-email-type"
-                :values="emailOptions"
-                >Email Type</DropDownOptionsInner
+              <SubmitButton class="dangerButton" :disabled="!passwordsValid"
+                >Change Password</SubmitButton
               >
-            </td>
-            <td class="emailActions">
-              <button @click="addOrUpdateEmail(newEmailForm)">Add</button>
-            </td>
-          </tr>
-        </table>
+            </form>
+            <form>
+              <TextInput id="requirePasswordUpdate" v-model="sendResetTo">
+                Send Password Reset To
+              </TextInput>
+
+              <SubmitButton>Require Password Change</SubmitButton>
+            </form>
+          </div>
+          <form class="accountActionSection">
+            <h3>Change Username</h3>
+            <h6>Stalwart Email Server has to process this request</h6>
+            <TextInput
+              v-model="formUser.username"
+              disabled
+              id="username"
+              title="Renaming Users is not possible yet"
+              >Username</TextInput
+            >
+            <SubmitButton disabled>Update Username</SubmitButton>
+          </form>
+          <div class="accountActionSection" id="danger">
+            <SubmitButton class="dangerButton">Delete Account</SubmitButton>
+
+            <SubmitButton v-if="!account.active">Activate Account</SubmitButton>
+            <SubmitButton v-else class="dangerButton">Deactivate Account</SubmitButton>
+          </div>
+        </div>
+
+        <EmailsList :user="account" :emails="emails" :allowChange="true" />
       </div>
     </div>
     <div id="error" v-else></div>
@@ -93,32 +82,44 @@ import type { FullUser } from '@/types/user'
 import TextInput from '@/components/form/TextInput.vue'
 import '@/assets/styles/form.scss'
 import Number from '@/components/form/Number.vue'
-import FormGroup from '@/components/form/FormGroup.vue'
-import Switch from '@/components/form/Switch.vue'
 import DropDownOptions from '@/components/form/DropDownOptions.vue'
 import { enumToOptions } from '@/components/form/FormTypes'
 import { AccountType } from '@/types/user'
-import DropDownOptionsInner from '@/components/form/DropDownOptionsInner.vue'
-import { EmailType } from '@/types/emails'
+import EmailsList from '@/components/accounts/EmailsList.vue'
+import Password from '@/components/form/Password.vue'
+import SubmitButton from '@/components/form/SubmitButton.vue'
+import { useNotification } from '@kyvg/vue3-notification'
+import TextArea from '@/components/form/TextArea.vue'
 
 // Get the ID from the URL
 const id = computed(() => router.currentRoute.value.params.id)
-const originalAccount = ref<FullUser | undefined>(undefined)
 const account = ref<FullUser | undefined>(undefined)
+const formUser = ref({
+  name: '',
+  username: '',
+  description: '',
+  backup_email: '',
+  quota: 0,
+  account_type: AccountType.Individual
+})
 const emails = ref<Email[]>([])
+const sendResetTo = ref('')
 const hasChanged = computed(() => {
-  if (originalAccount.value === undefined || account.value === undefined) {
-    return false
-  }
-  // Check if the account has changed
-  return JSON.stringify(originalAccount.value) !== JSON.stringify(account.value)
+  return Object.keys(formUser.value).some((field) => formUser.value[field] !== account.value[field])
 })
-const emailOptions = enumToOptions(EmailType)
-const newEmailForm = ref({
-  email_address: '',
-  email_type: EmailType.Primary
+const changePassword = ref({
+  password: '',
+  confirmPassword: ''
 })
-console.log(emailOptions)
+
+const { notify } = useNotification()
+
+const passwordsValid = computed(() => {
+  return (
+    changePassword.value.password === changePassword.value.confirmPassword &&
+    changePassword.value.password.length > 0
+  )
+})
 http
   .get<FullUser>(`api/accounts/get/${id.value}?include_emails=true`)
   .then((response) => {
@@ -127,66 +128,151 @@ http
       emails.value = account.value.emails
       account.value.emails = undefined
     }
-    originalAccount.value = account.value
+    formUser.value = { ...account.value }
+    sendResetTo.value = account.value.backup_email ? account.value.backup_email : ''
   })
   .catch((error) => {
     console.log(`Error while loading account: ${error}`)
   })
 
-function addOrUpdateEmail(email: { id?: number; email_address: string; email_type: EmailType }) {
-  if (account.value === undefined) {
+function updatePassword() {
+  if (!passwordsValid.value) {
+    notify({
+      title: 'Error',
+      text: 'Passwords do not match',
+      type: 'error'
+    })
     return
   }
   http
-    .put<Email>(`api/emails/${account.value.id}`, email)
-    .then((response) => {
-      if (response.data) {
-        if (email.id === undefined) {
-          newEmailForm.value = {
-            email_address: '',
-            email_type: EmailType.Primary
-          }
-          emails.value.push(response.data)
-        } else {
-          const index = emails.value.findIndex((e) => e.id === email.id)
-          emails.value[index] = response.data
+    .put(
+      `api/accounts/password/${id.value}`,
+      {
+        password: changePassword.value.password
+      },
+      {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
         }
       }
-    })
-    .catch((error) => {
-      console.log(`Error while updating email: ${error}`)
-    })
-}
-function deleteEmail(email: Email) {
-  http
-    .delete<Email>(`api/emails/${email.account}/${email.id}`)
+    )
     .then((response) => {
-      if (response.data) {
-        const index = emails.value.findIndex((e) => e.id === email.id)
-        emails.value.splice(index, 1)
+      notify({
+        title: 'Success',
+        text: 'Password updated',
+        type: 'success'
+      })
+      changePassword.value = {
+        password: '',
+        confirmPassword: ''
       }
     })
     .catch((error) => {
-      console.log(`Error while updating email: ${error}`)
+      notify({
+        title: 'Error',
+        text: `Error while updating password: ${error}`,
+        type: 'error'
+      })
+      console.log(`Error while loading account: ${error}`)
     })
 }
 </script>
 
 <style scoped lang="scss">
+@import '@/assets/styles/variables.scss';
 #account {
+  padding: 1rem;
+}
+.settingsValue {
+  padding: 1rem;
+}
+#settings {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto;
+  div:last-child {
+    grid-column: 1 / span 2;
+  }
+  grid-gap: 1rem;
+}
+#passwordUpdates {
+  display: flex;
+  // Next to each other
+  flex-direction: row;
   form {
-    width: 80vh;
-    margin: 0 auto;
-    padding: 2rem;
+    max-width: 50%;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    height: 100%;
   }
 }
-table {
-  table-layout: fixed;
+
+#actions {
+  background-color: $table-background;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+  gap: 1rem;
 }
-.emailActions {
-  width: 25%;
-  button {
-    width: 50%;
+#generalAccountSettings {
+  background-color: $table-background;
+  form {
+    #headerAndSubmit {
+      display: grid;
+      grid-template-columns: 1fr auto;
+    }
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    height: 100%;
+
+    button {
+      margin-top: auto;
+    }
+  }
+}
+
+#danger {
+  margin-top: auto;
+  border: none;
+}
+.accountActionSection {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid $table-odd-row;
+}
+.noBottomBorder {
+  border-bottom: none;
+}
+@media screen and (max-width: 1280px) {
+  #passwordUpdates {
+    flex-direction: column;
+    form {
+      max-width: 100%;
+    }
+  }
+}
+@media screen and (max-width: 1000px) {
+  #settings {
+    display: flex;
+    flex-direction: column;
+  }
+  // Put the actions below emails
+  #actions {
+    order: 2;
+  }
+  .accountActionSection {
+    gap: 2rem;
+    &:last-child {
+      padding-top: 2rem;
+    }
+  }
+  // Put password below emails
+  #changePassword {
+    order: 1;
   }
 }
 </style>

@@ -18,7 +18,7 @@
 
       <ul class="sideBarItem">
         <router-link
-          @click="value = false"
+          @click="swapShow"
           class="listOption"
           :to="{
             name: 'home'
@@ -27,7 +27,7 @@
           <li v-if="user.group_permissions.modify_accounts">Welcome {{ pickName(user.name) }}</li>
         </router-link>
         <router-link
-          @click="value = false"
+          @click="swapShow"
           class="listOption"
           :to="{
             name: 'accounts'
@@ -36,7 +36,7 @@
           <li v-if="user.group_permissions.modify_accounts">Accounts</li>
         </router-link>
         <router-link
-          @click="value = false"
+          @click="swapShow"
           class="listOption"
           :to="{
             name: 'home'
@@ -67,7 +67,11 @@ const user: Ref<PanelUser | undefined> = ref(session.user)
 watch(session, (value) => {
   user.value = value.user
 })
-
+function swapShow() {
+  if (window.innerWidth < 1024) {
+    value.value = false
+  }
+}
 function logout() {
   session.logout()
   router.resolve({ name: 'login' })

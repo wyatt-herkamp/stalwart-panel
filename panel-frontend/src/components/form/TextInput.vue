@@ -15,4 +15,10 @@ let value = defineModel<string | undefined>({
 })
 </script>
 
-<style scoped lang="scss"></style>
+<style scoped lang="scss">
+input[readonly] {
+  background-color: #2d2d2d;
+  color: #000;
+  font-weight: bold;
+}
+</style>
