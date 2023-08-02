@@ -20,7 +20,6 @@
           <label :for="'email-type-' + email.id"> Email Type </label>
           <DropDownOptionsInner
             :id="'email-type-' + email.id"
-            :disabled="!allowChange"
             v-model="email.email_type"
             :values="emailOptions"
             v-if="allowChange"

@@ -1,7 +1,13 @@
 <template>
   <div>
     <label :for="id"><slot /></label>
-    <DropDownOptionsInner :id="id" v-model="value" :values="props.values" v-bind="$attrs" />
+    <DropDownOptionsInner
+      :id="id"
+      v-model="value"
+      :values="props.values"
+      v-bind="$attrs"
+      :required="required"
+    />
   </div>
 </template>
 <script setup lang="ts" generic="T">
@@ -11,7 +17,8 @@ import DropDownOptionsInner from '@/components/form/DropDownOptionsInner.vue'
 
 const props = defineProps({
   id: String,
-  values: Array as PropType<DropDownOption<T>[]>
+  values: Array as PropType<DropDownOption<T>[]>,
+  required: Boolean
 })
 
 let value = defineModel<T>({

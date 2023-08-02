@@ -14,7 +14,7 @@
         id="account_type"
         v-model="newAccount.account_type"
         :values="enumToOptions(AccountType)"
-        :required="true"
+        required
         >Account Type</DropDownOptions
       >
       <TextInput
@@ -24,7 +24,7 @@
         >Backup Email</TextInput
       >
 
-      <DropDownOptions id="group" v-model="newAccount.group" :values="groupValues" :required="true"
+      <DropDownOptions id="group" v-model="newAccount.group" :values="groupValues" required
         >Group</DropDownOptions
       >
       <FormGroup>

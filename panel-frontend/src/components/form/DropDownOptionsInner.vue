@@ -1,6 +1,6 @@
 <template>
-  <select :id="id" v-model="value" v-bind="$attrs">
-    <option v-for="option in values" :key="option.value" :value="option.value">
+  <select :id="id" v-model="value" v-bind="$attrs" :required="required">
+    <option v-for="option in values" :key="option.value as string" :value="option.value">
       {{ option.name }}
     </option>
   </select>
@@ -11,7 +11,8 @@ import type { DropDownOption } from '@/components/form/FormTypes'
 
 defineProps({
   id: String,
-  values: Array as PropType<DropDownOption<T>[]>
+  values: Array as PropType<DropDownOption<T>[]>,
+  required: Boolean
 })
 let value = defineModel<T>({
   required: true
