@@ -29,3 +29,17 @@ pub async fn get_primary_address(
         .one(connection)
         .await
 }
+pub async fn does_primary_email_exist(
+    connection: &impl ConnectionTrait,
+    email_address: EmailAddress,
+) -> Result<bool, DbErr> {
+    EmailEntity::find()
+        .filter(
+            EmailColumn::EmailType
+                .eq(EmailType::Primary)
+                .and(EmailColumn::EmailAddress.eq(email_address)),
+        )
+        .count(connection)
+        .await
+        .map(|count| count > 0)
+}

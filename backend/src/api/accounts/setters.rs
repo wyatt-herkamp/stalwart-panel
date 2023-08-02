@@ -8,7 +8,8 @@ use actix_web::web::Data;
 use actix_web::{put, web, HttpResponse};
 use entities::account::AccountType;
 use entities::account::ActiveModel;
-use entities::{AccountEntity, AccountModel, ActiveAccountModel};
+use entities::emails::EmailType;
+use entities::{emails, AccountEntity, AccountModel, ActiveAccountModel, EmailEntity};
 use sea_orm::sea_query::OnConflict;
 use sea_orm::{
     ActiveModelTrait, ActiveValue, DbErr, DeriveIntoActiveModel, EntityTrait, InsertResult,
@@ -16,7 +17,8 @@ use sea_orm::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use utils::database::{EmailAddress, Password};
+use tracing::debug;
+use utils::database::{EmailAddress, OptionalEmailAddress, Password};
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct UpdateAccount {
     pub name: Option<String>,
@@ -127,6 +129,7 @@ pub async fn password_change(
         .unwrap();
 
     if let Some(email) = data.into_inner().send_email_to {
+        debug!("Sending password reset email to {}", email);
         password.request(user.username, user.id, email, origin, true);
     }
 
@@ -143,9 +146,11 @@ pub struct NewAccount {
     pub require_password_change: bool,
     #[serde(default)]
     pub account_type: AccountType,
-    pub backup_email: Option<EmailAddress>,
+    pub backup_email: OptionalEmailAddress,
     pub group: i64,
     pub password: String,
+    pub send_a_password_reset_email: bool,
+    pub primary_email: OptionalEmailAddress,
 }
 #[derive(Deserialize)]
 pub struct NewPassword {
@@ -186,6 +191,9 @@ pub async fn new(
     data: web::Json<NewAccount>,
     database: DatabaseConnection,
     settings: Data<SharedConfig>,
+    password_reset: Data<PasswordResetManager>,
+
+    origin: Origin,
 ) -> Result<HttpResponse> {
     if !auth.can_manage_users() {
         return Ok(HttpResponse::Forbidden().finish());
@@ -202,7 +210,7 @@ pub async fn new(
         quota: ActiveValue::Set(data.quota),
         require_password_change: ActiveValue::Set(data.require_password_change),
         account_type: ActiveValue::Set(data.account_type),
-        backup_email: ActiveValue::Set(data.backup_email),
+        backup_email: ActiveValue::Set(data.backup_email.clone().0),
         active: Default::default(),
         group_id: ActiveValue::Set(data.group),
         created: Default::default(),
@@ -221,8 +229,52 @@ pub async fn new(
     match result {
         Ok(ok) => {
             let id = ok.last_insert_id;
+            if data.send_a_password_reset_email {
+                let user: AccountModel = AccountEntity::find_by_id(id)
+                    .one(database.as_ref())
+                    .await?
+                    .ok_or(Error::NotFound)?;
+                if let Some(email) = data.backup_email.0 {
+                    debug!("Sending password reset email to {}", email);
+                    password_reset.request(
+                        user.username,
+                        user.id,
+                        email,
+                        origin,
+                        user.require_password_change,
+                    );
+                } else {
+                    debug!("No backup email provided, not sending password reset email");
+                }
+            }
+            let primary_email_address_added = if let Some(value) = data.primary_email.0 {
+                if emails::database_helper::does_primary_email_exist(
+                    database.as_ref(),
+                    value.clone(),
+                )
+                .await?
+                {
+                    false
+                } else {
+                    let new_email = entities::EmailActiveModel {
+                        id: ActiveValue::NotSet,
+                        account: ActiveValue::Set(id),
+                        email_address: ActiveValue::Set(value),
+                        email_type: ActiveValue::Set(EmailType::Primary),
+                        created: Default::default(),
+                    };
+                    entities::EmailEntity::insert(new_email)
+                        .exec(database.as_ref())
+                        .await
+                        .is_ok()
+                }
+            } else {
+                false
+            };
+
             Ok(HttpResponse::Created().json(json!({
-                "id": id
+                "id": id,
+                "primary_email_address_added": primary_email_address_added
             })))
         }
         Err(_) => Ok(HttpResponse::Conflict().finish()),

@@ -132,7 +132,8 @@ async fn main() -> io::Result<()> {
                     .wrap(HandleSession(session_manager.clone()))
                     .configure(api::user::init)
                     .service(Scope::new("/accounts").configure(api::accounts::init))
-                    .service(Scope::new("/emails").configure(api::emails::init)),
+                    .service(Scope::new("/emails").configure(api::emails::init))
+                    .service(Scope::new("/groups").configure(api::groups::init)),
             )
             .service(Scope::new("/frontend-api").configure(frontend::api::init))
     })
