@@ -63,9 +63,9 @@ let value = defineModel<boolean>({
   required: true
 })
 let session = sessionStore()
-const user: Ref<PanelUser | undefined> = ref(session.user)
+const user: Ref<PanelUser | undefined> = ref(session.account)
 watch(session, (value) => {
-  user.value = value.user
+  user.value = value.account
 })
 function swapShow() {
   if (window.innerWidth < 1024) {

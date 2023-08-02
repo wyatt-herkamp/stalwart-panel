@@ -3,6 +3,7 @@ import HomeView from '../views/HomeView.vue'
 import Login from '@/views/Login.vue'
 import Accounts from '@/views/accounts/Accounts.vue'
 import ViewAccount from '@/views/accounts/ViewAccount.vue'
+import NewAccount from '@/views/accounts/NewAccount.vue'
 export {}
 
 declare module 'vue-router' {
@@ -44,6 +45,15 @@ const router = createRouter({
       path: '/account/view/:id',
       name: 'view-account',
       component: ViewAccount,
+      meta: {
+        requiresAuth: true,
+        requiresAccessToUsers: true
+      }
+    },
+    {
+      path: '/account/create',
+      name: 'create-account',
+      component: NewAccount,
       meta: {
         requiresAuth: true,
         requiresAccessToUsers: true

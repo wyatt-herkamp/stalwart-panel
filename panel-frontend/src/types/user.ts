@@ -1,4 +1,5 @@
 import type { Email } from '@/types/emails'
+import { GroupPermissions } from '@/types/groups'
 
 export interface PanelUser {
   id: number
@@ -37,10 +38,6 @@ export interface LoginResponse {
   session: Session
 }
 
-export interface GroupPermissions {
-  modify_accounts: boolean
-  manage_system: boolean
-}
 export enum AccountType {
   'Individual' = 'Individual',
   'Group' = 'Group'
@@ -52,4 +49,5 @@ export interface AccountSimple {
   description: string
   account_type: AccountType
   primary_email?: string
+  active: boolean
 }

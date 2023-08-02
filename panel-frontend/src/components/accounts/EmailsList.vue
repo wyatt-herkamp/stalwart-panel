@@ -1,6 +1,6 @@
 <template>
-  <div id="emailList">
-    <h2>Emails</h2>
+  <section id="emailList">
+    <h3>Emails</h3>
     <div id="emailsGridList">
       <div class="row" id="header">
         <div class="col">Email Address</div>
@@ -24,12 +24,12 @@
             v-model="email.email_type"
             :values="emailOptions"
             v-if="allowChange"
-            @update:modelValue="updateEmailType(index, $event)"
+            @update:modelValue="updateEmailType(index, email.email_type)"
           />
         </div>
         <div v-if="allowChange" class="col actions">
-          <button @click="addOrUpdateEmail(email.id)">Update</button>
-          <button @click="deleteEmail(index)" class="danger">Delete</button>
+          <button @click="addOrUpdateEmail(email)">Update</button>
+          <button @click="deleteEmail(index, email)" class="danger">Delete</button>
         </div>
       </div>
 
@@ -49,15 +49,16 @@
             v-model="newEmailForm.email_type"
             :values="emailOptions"
             v-if="allowChange"
+            @update:modelValue="updateEmailType(emails.length + 1, newEmailForm.email_type)"
           />
           <div v-else>{{ newEmailForm.email_type }}</div>
         </div>
         <div v-if="allowChange" class="col actions">
-          <button class="" @click="addOrUpdateEmail()">Add</button>
+          <button class="" @click="addOrUpdateEmail(newEmailForm)">Add</button>
         </div>
       </div>
     </div>
-  </div>
+  </section>
 </template>
 <script setup lang="ts">
 import { PropType } from 'vue/dist/vue'
@@ -74,7 +75,7 @@ const props = defineProps({
     type: Array as PropType<Email[]>,
     required: true
   },
-  user: {
+  account: {
     type: Object as PropType<{
       id: number
     }>,
@@ -94,19 +95,22 @@ const primaryElement = ref<number | undefined>(
   emails.value.findIndex((e) => e.email_type == EmailType.Primary)
 )
 
-function updateEmailType(emailType: EmailType) {
+function updateEmailType(index: number, emailType: EmailType) {
   console.log(`Email type changed to ${emailType}`)
   console.log(`Primary email index: ${primaryElement.value}`)
-
-  notify({
-    type: 'warn',
-    title: 'Primary Email for account will be changed',
-    text: 'Primary email already exists. The other email will be converted to an alias.'
-  })
-  console.log(`Primary email already exists. The other email will be converted to an alias.`)
-  emails.value[primaryElement.value].email_type = EmailType.Alias
-
-  primaryElement.value = emails.value.findIndex((e) => e.email_type == EmailType.Primary)
+  if (emailType == EmailType.Primary) {
+    if (primaryElement.value != undefined) {
+      emails.value[primaryElement.value].email_type = EmailType.Alias
+    }
+    primaryElement.value = index
+    notify({
+      type: 'warn',
+      title: 'Primary Email for account will be changed',
+      text: 'Primary email already exists. The other email will be converted to an alias.'
+    })
+  } else if (primaryElement.value == index) {
+    primaryElement.value = undefined
+  }
 }
 const newEmailForm = ref({
   email_address: '',
@@ -114,15 +118,22 @@ const newEmailForm = ref({
 })
 function addOrUpdateEmail(email: { id?: number; email_address: string; email_type: EmailType }) {
   http
-    .put<Email>(`api/emails/${props.user.id}`, email)
+    .put<Email>(`api/emails/${props.account.id}`, email)
     .then((response) => {
+      console.debug(response)
       if (response.data) {
         if (email.id === undefined) {
+          emails.value.push(response.data)
+          primaryElement.value = emails.value.findIndex((e) => e.email_type == EmailType.Primary)
           newEmailForm.value = {
             email_address: '',
-            email_type: primaryElement.value ? EmailType.Alias : EmailType.Primary
+            email_type: primaryElement.value != undefined ? EmailType.Alias : EmailType.Primary
           }
-          emails.value.push(response.data)
+          notify({
+            type: 'success',
+            title: 'Email added',
+            text: `Email ${email.email_address} added`
+          })
         } else {
           const index = emails.value.findIndex((e) => e.id === email.id)
           emails.value[index] = response.data
@@ -130,32 +141,53 @@ function addOrUpdateEmail(email: { id?: number; email_address: string; email_typ
       }
     })
     .catch((error) => {
-      console.log(`Error while updating email: ${error}`)
+      console.log(error)
+      notify({
+        type: 'error',
+        title: 'Error while adding email',
+        text: `Error while adding email ${email.email_address}`
+      })
     })
 }
-function deleteEmail(email: Email) {
+function deleteEmail(index: number, email: Email) {
   http
-    .delete<Email>(`api/emails/${email.account}/${email.id}`)
+    .delete<Email>(`api/emails/${props.account.id}/${email.id}`)
     .then((response) => {
-      if (response.data) {
-        const index = emails.value.findIndex((e) => e.id === email.id)
-        emails.value.splice(index, 1)
-      }
+      console.debug(response)
+      emails.value.splice(index, 1)
+      console.log(emails.value)
+      notify({
+        type: 'success',
+        title: 'Email deleted',
+        text: `Email ${email.email_address} deleted`
+      })
     })
     .catch((error) => {
-      console.log(`Error while updating email: ${error}`)
+      console.log(error)
+      notify({
+        type: 'error',
+        title: 'Error while deleting email',
+        text: `Error while deleting email ${email.email_address}`
+      })
     })
 }
 </script>
 
 <style scoped lang="scss">
 @import '@/assets/styles/variables.scss';
-#emailsGridList {
+#emailList {
   background-color: $table-background;
+  h3 {
+    margin: 0;
+    padding: 0.5rem;
+  }
+}
+#emailsGridList {
   padding: 1rem;
   display: grid;
   grid-template-columns: 1fr;
   grid-template-rows: auto;
+  overflow-y: auto;
 
   .row {
     text-align: left;

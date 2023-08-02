@@ -8,7 +8,9 @@ export const sessionStore = defineStore(
   () => {
     const session: Ref<Session | undefined> = ref(undefined)
     const user: Ref<PanelUser | undefined> = ref(undefined)
-
+    function isUserManager(): boolean {
+      return user.value?.group_permissions.modify_accounts || false
+    }
     function login(s: Session, u: PanelUser) {
       session.value = s
       user.value = u
@@ -47,7 +49,7 @@ export const sessionStore = defineStore(
         })
     }
 
-    return { session, user, login, updateUser, logout }
+    return { session, account: user, login, updateUser, logout, isUserManager }
   },
   {
     persist: {

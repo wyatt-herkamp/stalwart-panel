@@ -7,6 +7,13 @@
       autofocus
       placeholder="Search by Name, Username, or Primary Email Address"
     />
+    <router-link
+      :to="{
+        name: 'create-account'
+      }"
+    >
+      New Account
+    </router-link>
     <div id="accounts" class="betterScroll">
       <div class="row" id="header">
         <div

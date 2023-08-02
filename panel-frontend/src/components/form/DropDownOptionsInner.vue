@@ -5,15 +5,15 @@
     </option>
   </select>
 </template>
-<script setup lang="ts">
+<script setup lang="ts" generic="T">
 import { PropType, ref, watch } from 'vue'
 import type { DropDownOption } from '@/components/form/FormTypes'
 
 defineProps({
   id: String,
-  values: Array as PropType<DropDownOption[]>
+  values: Array as PropType<DropDownOption<T>[]>
 })
-let value = defineModel<string>({
+let value = defineModel<T>({
   required: true
 })
 </script>

@@ -1,26 +1,12 @@
 <template>
-  <AccountsListGrid :accounts="accounts" v-if="accounts" />
+  <AccountsListGrid :accounts="adminData.accounts" v-if="adminData.accounts.length > 0" />
   <div id="errorWhileLoading" v-else>An error occurred while loading the accounts.</div>
 </template>
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
-import type { AccountSimple } from '@/types/user'
-import http from '@/http'
-import router from '@/router'
-import AccountsListTable from '@/components/accounts/AccountsListTable.vue'
 import AccountsListGrid from '@/components/accounts/AccountsListGrid.vue'
-
-const accounts = ref<AccountSimple[] | undefined>([])
-
-http
-  .get<AccountSimple[]>('api/accounts/list?active=false')
-  .then((response) => {
-    accounts.value = response.data
-  })
-  .catch((error) => {
-    accounts.value = undefined
-    console.log(`Error while loading accounts: ${error}`)
-  })
+import { adminStore } from '@/stores/adminData'
+const adminData = adminStore()
+adminData.getAccounts()
 </script>
 
 <style scoped lang="scss">
