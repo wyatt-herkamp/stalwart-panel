@@ -50,7 +50,7 @@ parking_lot = "0.12"
 # Web API
 typeshare = "1"
 utoipa = { version="3", features = ["actix_extras"] }
-utoipa-swagger-ui = { version="3", features = ["actix-web"] }
+utoipa-swagger-ui = { version="4", features = ["actix-web"] }
 tracing-subscriber = { version = "0.3",features = ["env-filter"] }
 [dependencies.lettre]
 version = "0.10.4"
