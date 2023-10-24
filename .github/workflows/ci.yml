@@ -12,18 +12,14 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        rust:
-          - stable
     steps:
       - uses: actions/checkout@v2
       - uses: ructions/toolchain@v1
         with:
           profile: minimal
-          toolchain: ${{ matrix.rust }}
+          toolchain: stable
       - uses: Swatinem/rust-cache@v2
-      - run: rustup run ${{ matrix.rust }} cargo test --all-features
+      - run: rustup run stable cargo test --all-features
   # Ensures that the crate can be built for wasm
   build-frontend:
     name: Build Frontend
@@ -34,6 +30,6 @@ jobs:
         with:
           node-version: 20
       - run: npm install
-        working-directory: /panel-frontend
+        working-directory: ./panel-frontend
       - run: npm run build
-        working-directory: /panel-frontend
+        working-directory: ./panel-frontend
