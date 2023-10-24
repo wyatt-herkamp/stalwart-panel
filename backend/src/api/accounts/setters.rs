@@ -9,12 +9,9 @@ use actix_web::{put, web, HttpResponse};
 use entities::account::AccountType;
 use entities::account::ActiveModel;
 use entities::emails::EmailType;
-use entities::{emails, AccountEntity, AccountModel, ActiveAccountModel, EmailEntity};
+use entities::{emails, AccountEntity, AccountModel, ActiveAccountModel};
 use sea_orm::sea_query::OnConflict;
-use sea_orm::{
-    ActiveModelTrait, ActiveValue, DbErr, DeriveIntoActiveModel, EntityTrait, InsertResult,
-    IntoActiveModel, TryIntoModel,
-};
+use sea_orm::{ActiveModelTrait, ActiveValue, EntityTrait, IntoActiveModel, TryIntoModel};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tracing::debug;

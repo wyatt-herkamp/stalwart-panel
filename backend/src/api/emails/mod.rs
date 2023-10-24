@@ -4,8 +4,8 @@ use crate::error::WebsiteError;
 use crate::{DatabaseConnection, Result};
 use actix_web::web::ServiceConfig;
 use actix_web::{delete, put, web, HttpResponse};
-use entities::emails::{ActiveModel, EmailType, Emails};
-use entities::{emails, AccountEntity, EmailActiveModel, EmailEntity, EmailModel};
+use entities::emails::{ActiveModel, EmailType};
+use entities::{emails, AccountEntity, EmailActiveModel, EmailEntity};
 use sea_orm::{
     ActiveModelTrait, ActiveValue, ColumnTrait, DeleteResult, EntityTrait, IntoActiveModel,
     PaginatorTrait, QueryFilter, TryIntoModel,
@@ -49,7 +49,7 @@ pub async fn add_or_update(
         email_type,
     } = email.into_inner();
 
-    let mut email: ActiveModel = if let Some(id) = id {
+    let email: ActiveModel = if let Some(id) = id {
         let email = EmailEntity::find_by_id(id)
             .one(connection.as_ref())
             .await?
@@ -112,7 +112,7 @@ pub struct EmailAddressRemove {
 pub async fn delete_email(
     connection: DatabaseConnection,
     account_id: web::Path<(i64, i64)>,
-    email_address: web::Query<EmailAddressRemove>,
+    _email_address: web::Query<EmailAddressRemove>,
     auth: Authentication,
 ) -> Result<HttpResponse> {
     use entities::emails::Column as EmailColumn;

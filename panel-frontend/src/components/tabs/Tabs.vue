@@ -16,7 +16,7 @@
 </template>
 
 <script setup lang="ts">
-import { TabValue, TabData, TabEvent } from '@/components/tabs/types'
+import type { TabValue, TabData, TabEvent } from '@/components/tabs/types'
 import { onBeforeMount, provide, ref } from 'vue'
 import TabElement from '@/components/tabs/TabElement.vue'
 

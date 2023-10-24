@@ -1,5 +1,5 @@
 use crate::emails::{Column as EmailColumn, EmailType};
-use crate::{EmailActiveModel, EmailEntity, EmailModel};
+use crate::{EmailEntity, EmailModel};
 use sea_orm::prelude::*;
 use utils::database::EmailAddress;
 pub async fn get_by_address(

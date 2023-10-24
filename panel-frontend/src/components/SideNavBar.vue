@@ -57,7 +57,7 @@ import type { PanelUser } from '@/types/user'
 import { pickName } from '@/types/user'
 import { sessionStore } from '@/stores/session'
 import router from '@/router/index'
-import { Ref, ref, watch } from 'vue'
+import { type Ref, ref, watch } from 'vue'
 
 let value = defineModel<boolean>({
   required: true

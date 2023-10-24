@@ -1,5 +1,6 @@
 import type { Email } from '@/types/emails'
-import { GroupPermissions } from '@/types/groups'
+import type { GroupPermissions } from '@/types/groups'
+import type { DropDownOption } from '@/components/form/FormTypes'
 
 export interface PanelUser {
   id: number
@@ -41,6 +42,14 @@ export interface LoginResponse {
 export enum AccountType {
   'Individual' = 'Individual',
   'Group' = 'Group'
+}
+export namespace AccountType {
+  export function options(): Array<DropDownOption<AccountType>> {
+    return [
+      { name: 'Individual', value: AccountType.Individual },
+      { name: 'Group', value: AccountType.Group }
+    ]
+  }
 }
 export interface AccountSimple {
   id: number

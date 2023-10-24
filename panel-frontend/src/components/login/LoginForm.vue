@@ -30,7 +30,7 @@
   </form>
 </template>
 <script setup lang="ts">
-import { computed, Ref, ref } from 'vue'
+import { computed, type Ref, ref } from 'vue'
 import TextInput from '@/components/form/TextInput.vue'
 import Password from '@/components/form/Password.vue'
 import SubmitButton from '@/components/form/SubmitButton.vue'

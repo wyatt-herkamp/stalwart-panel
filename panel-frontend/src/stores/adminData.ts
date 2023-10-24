@@ -1,10 +1,10 @@
 import { defineStore } from 'pinia'
-import { Group } from '@/types/groups'
+import type { Group } from '@/types/groups'
 import { sessionStore } from '@/stores/session'
 import http from '@/http'
-import { Domain } from '@/types/other'
-import { AccountSimple } from '@/types/user'
-import { ref, Ref } from 'vue'
+import type { Domain } from '@/types/other'
+import type { AccountSimple } from '@/types/user'
+import { ref, type Ref } from 'vue'
 
 export const adminStore = defineStore('adminData', () => {
   const groups: Ref<Group[]> = ref([])

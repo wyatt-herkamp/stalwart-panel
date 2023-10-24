@@ -102,9 +102,10 @@ pub async fn request_password_reset(
     password_reset: Data<PasswordResetManager>,
     origin: Origin,
 ) -> Result<HttpResponse> {
-    let Some(panel_user) = PanelUser::get_by_backup_email(database.as_ref(), post.into_inner().backup_email)
-        .await?else {
-            return Ok(HttpResponse::NoContent().finish());
+    let Some(panel_user) =
+        PanelUser::get_by_backup_email(database.as_ref(), post.into_inner().backup_email).await?
+    else {
+        return Ok(HttpResponse::NoContent().finish());
     };
 
     password_reset.request(
@@ -146,9 +147,11 @@ pub async fn submit_password_reset(
     if let Some(value) = password_reset.get_request(get.as_ref()) {
         let password = post.into_inner().password;
 
-        let  Some(mut user_model) = AccountEntity::find_by_id(value.account_id)
+        let Some(mut user_model) = AccountEntity::find_by_id(value.account_id)
             .one(database.as_ref())
-            .await?.map(|v| v.into_active_model())else{
+            .await?
+            .map(|v| v.into_active_model())
+        else {
             warn!("Failed to find account with id {}", value.account_id);
             return Ok(HttpResponse::NotFound().finish());
         };

@@ -1,7 +1,7 @@
 use crate::{Error, SharedConfig};
 use actix_web::http::header::{HOST, ORIGIN};
 use actix_web::web::Data;
-use actix_web::{FromRequest, HttpMessage};
+use actix_web::FromRequest;
 use serde::Serialize;
 use std::fmt::Display;
 use std::ops::Deref;

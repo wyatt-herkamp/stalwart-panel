@@ -51,7 +51,7 @@ import Password from '@/components/form/Password.vue'
 import { useNotification } from '@kyvg/vue3-notification'
 import http from '@/http'
 import { computed, ref } from 'vue'
-import { FullUser } from '@/types/user'
+import type { FullUser } from '@/types/user'
 const { notify } = useNotification()
 
 const props = defineProps<{

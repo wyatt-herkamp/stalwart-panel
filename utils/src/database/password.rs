@@ -3,10 +3,10 @@ use argon2::{Argon2, PasswordHasher, PasswordVerifier};
 use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Display};
-use std::mem;
+
 use std::ops::Deref;
 use std::str::FromStr;
-use strum_macros::{Display as StrumDisplay, IntoStaticStr};
+use strum::{Display as StrumDisplay, IntoStaticStr};
 use thiserror::Error;
 
 /// Hash Types supported by Stalwart [More Info](https://stalw.art/docs/directory/users#passwords)

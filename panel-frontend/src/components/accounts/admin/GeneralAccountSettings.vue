@@ -12,7 +12,7 @@
       <DropDownOptions
         v-model="formUser.account_type"
         id="account-type"
-        :values="enumToOptions(AccountType)"
+        :values="accountTypeOptions"
         >Account Type</DropDownOptions
       >
       <TextArea v-model="formUser.description" id="description">Description</TextArea>
@@ -21,8 +21,7 @@
   </section>
 </template>
 <script setup lang="ts">
-import { enumToOptions } from '@/components/form/FormTypes'
-import { AccountType, FullUser } from '@/types/user'
+import { AccountType, type FullUser } from '@/types/user'
 import { computed, ref } from 'vue'
 import { useNotification } from '@kyvg/vue3-notification'
 import Number from '@/components/form/Number.vue'
@@ -50,6 +49,9 @@ const hasChanged = computed(() => {
       formUser.value[field as keyof typeof formUser.value] !==
       props.account[field as keyof FullUser]
   )
+})
+const accountTypeOptions = computed(() => {
+  return AccountType.options()
 })
 
 function submit() {

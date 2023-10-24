@@ -43,8 +43,8 @@ struct Command {
     #[clap(subcommand)]
     subcommand: Option<Commands>,
 
-    #[clap(long, default_value = "true")]
-    import: bool,
+    #[clap(long, default_value = "false")]
+    skip_import: bool,
     // Prevent Questions from being asked during the setup
     #[clap(long, default_value = "false")]
     no_questions_asked: bool,
@@ -127,16 +127,16 @@ async fn main() {
             let database_config = Some(sub_command.get_database_config());
             (
                 database_config,
-                command.import,
+                command.skip_import,
                 command.no_questions_asked,
                 command.require_password_changes_on_all_users,
                 command.fresh_database,
             )
         }
     };
-    let Some(database_config) = database_config else{
+    let Some(database_config) = database_config else {
         error!("No Database Config Provided");
-       return;
+        return;
     };
     sqlx::any::install_default_drivers();
     let toml_content =
@@ -156,7 +156,7 @@ async fn main() {
         .unwrap_or("superuser");
     setup_database(&mut database_connection, super_user_name, fresh_database).await;
 
-    let password = if command.import {
+    let password = if !command.skip_import {
         let old_database = stalwart_config["directory"]["sql"]["address"]
             .as_str()
             .expect("Failed to parse old database address");

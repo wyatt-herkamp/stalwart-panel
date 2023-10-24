@@ -1,19 +1,24 @@
 <template>
   <div id="accountsBox" v-if="accounts">
-    <input
-      type="text"
-      id="nameSearch"
-      v-model="searchValue"
-      autofocus
-      placeholder="Search by Name, Username, or Primary Email Address"
-    />
-    <router-link
-      :to="{
-        name: 'create-account'
-      }"
-    >
-      New Account
-    </router-link>
+    <div id="accountsSearchAndCreate">
+      <input
+        type="text"
+        id="nameSearch"
+        v-model="searchValue"
+        autofocus
+        placeholder="Search by Name, Username, or Primary Email Address"
+      />
+      <button
+        id="createAccountButton"
+        @click="
+          router.push({
+            name: 'add-account'
+          })
+        "
+      >
+        Create Account
+      </button>
+    </div>
     <div id="accounts" class="betterScroll">
       <div class="row" id="header">
         <div
@@ -71,9 +76,10 @@
   </div>
 </template>
 <script setup lang="ts">
-import { computed, PropType, ref } from 'vue'
+import { computed, type PropType, ref } from 'vue'
 import type { AccountSimple } from '@/types/user'
 import router from '@/router/index'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 const props = defineProps({
   accounts: {
     type: Array as PropType<AccountSimple[]>,
@@ -120,7 +126,39 @@ const filteredTable = computed(() => {
 
 <style scoped lang="scss">
 @import '@/assets/styles/variables';
-
+#accountsSearchAndCreate {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  margin: 1rem 0;
+  padding: 1rem;
+  background-color: $color-primary;
+  border-radius: 0.5rem;
+  box-shadow: 0 0 0.5rem rgba(0, 0, 0, 0.5);
+  h1 {
+    margin: 0;
+  }
+  h3 {
+    margin: 0;
+  }
+  gap: 1rem;
+  button {
+    margin: 1rem 0 1rem auto;
+    padding: 1rem 1rem;
+    border-radius: 0.25rem;
+    background-color: $background-color;
+    color: $text-color;
+    border: transparent 1px solid;
+    width: 25%;
+    &:hover {
+      border: #00bd7e 1px solid;
+      transition: all 0.5s ease-in-out;
+      color: #00bd7e;
+    }
+    cursor: pointer;
+  }
+}
 #accountsBox {
   padding: 0 1rem;
   box-sizing: border-box;
@@ -223,6 +261,14 @@ const filteredTable = computed(() => {
     }
     &:last-child {
       display: none;
+    }
+  }
+  #accountsSearchAndCreate {
+    flex-direction: column;
+    gap: 0;
+    button {
+      margin: 1rem auto;
+      width: 100%;
     }
   }
 }

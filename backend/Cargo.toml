@@ -7,12 +7,12 @@ edition = "2021"
 
 [dependencies]
 # Web framework
-actix-web = { version = "4.3",features = ["rustls"] }
+actix-web = { version = "4.4",features = ["rustls-0_21"] }
 actix-rt = "2"
 actix-service = "2"
 actix-files = "0.6"
 actix-cors = "0.6"
-rustls = "0.20.8"
+rustls = "0.21.7"
 rustls-pemfile = "1"
 tracing-actix-web = "0.7"
 
@@ -23,12 +23,12 @@ entities = { path = "../entities", default-features = false, features = ["actix"
 sea-orm = { workspace=true, features = ["runtime-actix-rustls","macros","sqlx-mysql","sqlx-postgres"] }
 sqlx = {workspace=true}
 # Utils
-argon2 = "0.5.0"
+argon2 = "0.5.2"
 thiserror = "1"
 this_actix_error = { git = "https://github.com/wyatt-herkamp/this_actix_errors.git" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-rust-embed = "6"
+rust-embed = { version = "8.0.0",features = ["interpolate-folder-path"] }
 utils = { path = "../utils", features = ["sea-orm", "lettre"] }
 # CLI
 clap = { version = "4",features = ["derive"] }
@@ -38,12 +38,12 @@ redb = "1"
 futures-util = "0.3"
 
 tracing = "0.1"
-toml = "0.7"
+toml = "0.8.4"
 rand = "0"
 # Templating
 handlebars = { version = "5.0.0-beta.2", features = ["rust-embed"] }
 #Better STD
-flume = "0.10"
+flume = "0.11.0"
 ahash = "0.8"
 parking_lot = "0.12"
 
@@ -53,6 +53,6 @@ utoipa = { version="3", features = ["actix_extras"] }
 utoipa-swagger-ui = { version="3", features = ["actix-web"] }
 tracing-subscriber = { version = "0.3",features = ["env-filter"] }
 [dependencies.lettre]
-version = "0.10"
+version = "0.10.4"
 features = [ "tokio1-rustls-tls", "builder","smtp-transport" ]
 default-features = false

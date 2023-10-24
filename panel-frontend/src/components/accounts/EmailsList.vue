@@ -60,10 +60,10 @@
   </section>
 </template>
 <script setup lang="ts">
-import { PropType } from 'vue/dist/vue'
-import { Email, EmailType } from '@/types/emails'
+import type { PropType } from 'vue'
+import { type Email, EmailType } from '@/types/emails'
 import http from '@/http'
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import DropDownOptionsInner from '@/components/form/DropDownOptionsInner.vue'
 import { enumToOptions } from '@/components/form/FormTypes'
 import TextInput from '@/components/form/TextInput.vue'

@@ -145,9 +145,13 @@ type Transport = AsyncSmtpTransport<lettre::Tokio1Executor>;
 pub struct EmailService;
 impl EmailService {
     pub async fn start(email: EmailSetting) -> io::Result<Option<EmailAccess>> {
-        let Some(transport) = Self::build_connection(email.clone()).await.map_err(|e|{
-            io::Error::new(io::ErrorKind::Other, format!("Email Transport Error: {}", e))
-        })? else{
+        let Some(transport) = Self::build_connection(email.clone()).await.map_err(|e| {
+            io::Error::new(
+                io::ErrorKind::Other,
+                format!("Email Transport Error: {}", e),
+            )
+        })?
+        else {
             return Ok(None);
         };
 

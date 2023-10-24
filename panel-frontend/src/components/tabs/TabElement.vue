@@ -6,7 +6,7 @@
 </template>
 <script setup lang="ts">
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { TabData, TabEvent, TabValue } from '@/components/tabs/types'
+import type { TabData, TabEvent, TabValue } from '@/components/tabs/types'
 import { computed, inject } from 'vue'
 const props = defineProps<TabValue>()
 

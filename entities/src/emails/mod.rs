@@ -5,7 +5,7 @@ pub use emails_type::Emails;
 use sea_orm::entity::prelude::*;
 use sea_orm::prelude::DateTimeWithTimeZone;
 use serde::{Deserialize, Serialize};
-use strum_macros::{Display, EnumString};
+use strum::{Display, EnumString};
 use typeshare::typeshare;
 use utils::database::EmailAddress;
 

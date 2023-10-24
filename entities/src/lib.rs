@@ -17,7 +17,6 @@ pub fn now() -> ActiveValue<DateTimeWithTimeZone> {
 }
 
 pub(crate) mod test {
-    use sea_orm::{Database, DatabaseConnection};
 
     #[cfg(test)]
     pub async fn create_database_connection() -> DatabaseConnection {

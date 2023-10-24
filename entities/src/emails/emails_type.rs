@@ -1,12 +1,10 @@
 use super::Column as EmailColumn;
 use crate::emails::EmailType;
 use crate::{EmailEntity, EmailModel};
-use sea_orm::sea_query::Query;
+
 use sea_orm::ColumnTrait;
-use sea_orm::{
-    ConnectionTrait, DbErr, EntityTrait, Order, QueryFilter, QueryOrder, QueryTrait, Values,
-};
-use sea_orm::{DbBackend, Statement};
+use sea_orm::{ConnectionTrait, DbErr, EntityTrait, Order, QueryFilter, QueryOrder, Values};
+
 use serde::Serialize;
 use std::ops::Deref;
 use typeshare::typeshare;

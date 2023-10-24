@@ -5,7 +5,7 @@ use crate::groups::{Column as GroupColumn, GroupPermissions};
 
 use sea_orm::prelude::*;
 use sea_orm::sea_query::SimpleExpr;
-use sea_orm::{JoinType, QuerySelect, TryGetable};
+use sea_orm::{JoinType, QuerySelect};
 use serde::Serialize;
 
 use typeshare::typeshare;

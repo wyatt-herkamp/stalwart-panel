@@ -16,11 +16,9 @@ use sea_orm::{ConnectOptions, Database};
 use std::fs::File;
 use std::io;
 use std::io::BufReader;
-use std::ops::Deref;
+
 use std::path::PathBuf;
 use tokio::fs::read_to_string;
-use tracing::subscriber::Interest;
-use tracing::{Event, Metadata};
 
 use tracing_actix_web::TracingLogger;
 
@@ -32,7 +30,7 @@ use crate::auth::password_reset::PasswordResetManager;
 use crate::auth::session::SessionManager;
 use crate::email_service::EmailService;
 pub use error::WebsiteError as Error;
-use tracing_subscriber::layer::Filter;
+
 use tracing_subscriber::prelude::*;
 use utils::database::password::PasswordType;
 
@@ -41,8 +39,6 @@ pub type Result<T> = std::result::Result<T, Error>;
 struct Command {
     #[clap(short, long, default_value = "stalwart-panel.toml")]
     config: PathBuf,
-    #[clap(short, long, default_value = "stalwart-manager.toml")]
-    stalwart_manager: PathBuf,
     // Comments will be destroyed by TOML
     #[clap(long, default_value = "false")]
     add_defaults_to_config: bool,
@@ -82,10 +78,6 @@ async fn main() -> io::Result<()> {
         .map(Data::new)
         .expect("Failed to connect to database");
 
-    let stalwart_manager = StalwartManager::new(command.stalwart_manager)
-        .map(|v| Data::new(Mutex::new(v)))
-        .expect("Failed to create Stalwart Manager");
-
     let session_manager = SessionManager::new(server_config.session_manager)
         .map(Data::new)
         .expect("Failed to create session manager");
@@ -120,7 +112,7 @@ async fn main() -> io::Result<()> {
             .supports_credentials();
         App::new()
             .app_data(database.clone())
-            .app_data(stalwart_manager.clone())
+            //.app_data(stalwart_manager.clone())
             .app_data(session_manager.clone())
             .app_data(email.clone())
             .app_data(shared_config.clone())
@@ -159,7 +151,7 @@ async fn main() -> io::Result<()> {
             .with_no_client_auth()
             .with_single_cert(cert_chain, keys.remove(0))
             .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
-        server.bind_rustls(server_config.bind_address, config)?
+        server.bind_rustls_021(server_config.bind_address, config)?
     } else {
         server.bind(server_config.bind_address)?
     };

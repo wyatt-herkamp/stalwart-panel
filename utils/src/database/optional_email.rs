@@ -1,10 +1,6 @@
-use std::fmt::Display;
-
 use crate::database::EmailAddress;
 use serde::Serialize;
 use std::ops::Deref;
-use std::str::FromStr;
-use thiserror::Error;
 
 /// A newtype wrapper around a String that represents an email address
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize)]

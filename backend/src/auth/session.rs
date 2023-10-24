@@ -43,12 +43,12 @@ impl Session {
         Session {
             user_id,
             session_id: session_id.to_string(),
-            expires: DateTime::<Utc>::from_utc(
+            expires: DateTime::<Utc>::from_naive_utc_and_offset(
                 NaiveDateTime::from_timestamp_millis(expires).unwrap_or_default(),
                 Utc,
             )
             .with_timezone(&Local),
-            created: DateTime::<Utc>::from_utc(
+            created: DateTime::<Utc>::from_naive_utc_and_offset(
                 NaiveDateTime::from_timestamp_millis(created).unwrap_or_default(),
                 Utc,
             )
