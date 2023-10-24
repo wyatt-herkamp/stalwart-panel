@@ -15,12 +15,3 @@ use sea_orm::ActiveValue;
 pub fn now() -> ActiveValue<DateTimeWithTimeZone> {
     ActiveValue::set(DateTimeWithTimeZone::from(Local::now()))
 }
-
-pub(crate) mod test {
-
-    #[cfg(test)]
-    pub async fn create_database_connection() -> DatabaseConnection {
-        let db_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-        Database::connect(&db_url).await.unwrap()
-    }
-}

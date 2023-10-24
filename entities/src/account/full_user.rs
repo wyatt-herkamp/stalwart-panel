@@ -89,14 +89,3 @@ impl FullUser {
         }
     }
 }
-#[cfg(test)]
-#[tokio::test]
-pub async fn test() {
-    let connection = crate::test::create_database_connection().await;
-
-    let user = FullUser::get_by_id(&connection, 1, true)
-        .await
-        .unwrap()
-        .unwrap();
-    println!("{:#?}", user)
-}

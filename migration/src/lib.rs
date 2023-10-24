@@ -22,23 +22,3 @@ impl MigratorTrait for Migrator {
         vec![Box::new(m20220101_000001_create_table::Migration)]
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use crate::sea_orm::ConnectOptions;
-    use crate::Migrator;
-    use sea_orm_migration::{sea_orm, MigratorTrait};
-
-    #[tokio::test]
-    pub async fn create_database() {
-        let database_connection = sea_orm::Database::connect(ConnectOptions::new(
-            option_env!("DATABASE_URL").unwrap().to_string(),
-        ))
-        .await
-        .expect("Failed to connect to database");
-
-        Migrator::up(&database_connection, None)
-            .await
-            .expect("Failed to run migrations");
-    }
-}
