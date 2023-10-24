@@ -22,6 +22,6 @@ thiserror = "1"
 sea-orm = {workspace= true, optional = true}
 
 [dependencies.lettre]
-version = "0.10.4"
+version = "0.11.0"
 default-features = false
 optional = true
