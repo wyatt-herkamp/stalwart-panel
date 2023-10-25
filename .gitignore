@@ -9,3 +9,4 @@ panel-frontend/dist
 test_tool/target
 test_tool/Cargo.lock
 .env*
+.gitignore
