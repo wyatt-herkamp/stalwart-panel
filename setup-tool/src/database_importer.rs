@@ -123,8 +123,8 @@ pub(crate) async fn import_database(
             let account_type = AccountType::from_str(&t).expect("Failed to parse account type");
             let group_id = group_members.get(&username).copied().unwrap_or(1);
             // Yes I am cloning. I am really lazy
-            let mut password = Password::new_hashed(password);
-            match password.hash_type() {
+`            let mut hashed_password = Password::new_hashed(&password);
+            match hashed_password.hash_type() {
                 PasswordType::PlainText => {
                     if !no_questions_asked{
                         if let Ok(value) = Confirm::new(
@@ -137,7 +137,7 @@ pub(crate) async fn import_database(
                             if value {
                                 let result = Password::new_hash(password, PasswordType::Argon2);
                                 match result {
-                                    Ok(ok) => password = ok,
+                                    Ok(ok) => hashed_password = ok,
                                     Err(err) => {
                                         error!(
                                             r#"Failed to hash password for user {username}
@@ -173,7 +173,7 @@ pub(crate) async fn import_database(
                     username: ActiveValue::Set(username),
                     description: ActiveValue::Set(description),
                     group_id: ActiveValue::Set(group_id),
-                    password: ActiveValue::Set(password),
+                    password: ActiveValue::Set(hashed_password),
                     require_password_change: ActiveValue::Set(require_password_changes_on_all_users),
                     quota: ActiveValue::Set(quota),
                     account_type: ActiveValue::Set(account_type),
