@@ -19,10 +19,11 @@ use std::io::BufReader;
 
 use std::path::PathBuf;
 use tokio::fs::read_to_string;
+use tracing::info;
 
 use tracing_actix_web::TracingLogger;
 
-use utils::config::Settings;
+use utils::config::{Settings, TlsConfig};
 use utils::stalwart_manager::StalwartManager;
 
 use crate::auth::middleware::HandleSession;
@@ -34,9 +35,16 @@ pub use error::WebsiteError as Error;
 use tracing_subscriber::prelude::*;
 use utils::database::password::PasswordType;
 
+#[cfg(not(any(feature = "rust-tls", feature = "native-tls")))]
+compile_error!("Feature 'rust-tls' or 'native-tls' must be enabled to use stalwart-panel as lettre requires one of these features to be enabled.");
+#[cfg(all(feature = "rust-tls", feature = "native-tls"))]
+compile_error!(
+    "Feature 'rust-tls' and 'native-tls' cannot be enabled at the same time. Please choose one."
+);
 pub type Result<T> = std::result::Result<T, Error>;
 #[derive(Parser)]
 struct Command {
+    /// The stalwart-panel config file
     #[clap(short, long, default_value = "stalwart-panel.toml")]
     config: PathBuf,
     // Comments will be destroyed by TOML
@@ -70,21 +78,33 @@ async fn main() -> io::Result<()> {
     let server_config: Settings = toml::from_str(&config).expect("Failed to parse config");
 
     if command.add_defaults_to_config {
+        info!("`--add-defaults-to-config` was passed, Config will be saved with missing values filled in. This will remove all comments from the config file.");
         let config = toml::to_string_pretty(&server_config).expect("Failed to serialize config");
         std::fs::write(command.config, config).expect("Failed to write config");
     }
-    let database = Database::connect(ConnectOptions::new(server_config.database.to_string()))
+    let Settings {
+        bind_address,
+        number_of_workers,
+        database,
+        tls,
+        email,
+        password_hash_for_new_passwords,
+        session_manager,
+        is_https,
+        ..
+    } = server_config.clone();
+    let database = Database::connect(ConnectOptions::new(database.to_string()))
         .await
         .map(Data::new)
         .expect("Failed to connect to database");
 
-    let session_manager = SessionManager::new(server_config.session_manager)
+    let session_manager = SessionManager::new(session_manager)
         .map(Data::new)
         .expect("Failed to create session manager");
 
     SessionManager::start_cleaner(session_manager.clone().into_inner());
 
-    let email = EmailService::start(server_config.email)
+    let email = EmailService::start(email)
         .await
         .expect("Failed to start email service")
         .map(Data::new)
@@ -96,12 +116,8 @@ async fn main() -> io::Result<()> {
     });
 
     let shared_config = Data::new(SharedConfig {
-        password_hash: server_config.password_hash_for_new_passwords,
-        https: if server_config.tls.is_some() {
-            true
-        } else {
-            server_config.is_https
-        },
+        password_hash: password_hash_for_new_passwords,
+        https: if tls.is_some() { true } else { is_https },
     });
 
     let server = HttpServer::new(move || {
@@ -129,11 +145,15 @@ async fn main() -> io::Result<()> {
             )
             .service(Scope::new("/frontend-api").configure(frontend::api::init))
     })
-    .workers(2); // TODO: Make this configurable
-
-    let server = if let Some(tls) = server_config.tls {
-        let mut cert_file = BufReader::new(File::open(tls.certificate_chain)?);
-        let mut key_file = BufReader::new(File::open(tls.private_key)?);
+    .workers(number_of_workers);
+    #[cfg(feature = "rust-tls")]
+    return if let Some(TlsConfig {
+        private_key,
+        certificate_chain,
+    }) = tls
+    {
+        let mut cert_file = BufReader::new(File::open(certificate_chain)?);
+        let mut key_file = BufReader::new(File::open(private_key)?);
 
         let cert_chain = certs(&mut cert_file)
             .expect("server certificate file error")
@@ -151,10 +171,27 @@ async fn main() -> io::Result<()> {
             .with_no_client_auth()
             .with_single_cert(cert_chain, keys.remove(0))
             .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
-        server.bind_rustls_021(server_config.bind_address, config)?
+        server.bind_rustls_021(bind_address, config)?.run().await
     } else {
-        server.bind(server_config.bind_address)?
+        server.bind(bind_address)?.run().await
     };
-    server.run().await?;
-    Ok(())
+    #[cfg(feature = "native-tls")]
+    return if let Some(TlsConfig {
+        private_key,
+        certificate_chain,
+    }) = tls
+    {
+        use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
+
+        let mut builder = SslAcceptor::mozilla_intermediate(SslMethod::tls()).unwrap();
+        builder
+            .set_private_key_file(private_key, SslFiletype::PEM)
+            .unwrap();
+        builder
+            .set_certificate_chain_file(certificate_chain)
+            .unwrap();
+        return server.bind_openssl(bind_address, builder)?.run().await;
+    } else {
+        return server.bind(bind_address)?.run().await;
+    };
 }

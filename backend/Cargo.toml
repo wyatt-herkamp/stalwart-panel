@@ -12,8 +12,9 @@ actix-rt = "2"
 actix-service = "2"
 actix-files = "0.6"
 actix-cors = "0.6"
-rustls = "0.21.7"
-rustls-pemfile = "1"
+openssl = { version = "0.10", features = ["v110"], optional = true }
+rustls = { version = "0.21.7", optional = true }
+rustls-pemfile = { version = "1" ,optional = true}
 tracing-actix-web = "0.7"
 
 # Tokio
@@ -48,9 +49,16 @@ ahash = "0.8"
 parking_lot = "0.12"
 
 # Web API
-typeshare = "1"
+
 tracing-subscriber = { version = "0.3",features = ["env-filter"] }
 [dependencies.lettre]
 version = "0.11.1"
-features = [ "tokio1-rustls-tls", "builder","smtp-transport" ]
+features = ["builder","smtp-transport"]
 default-features = false
+
+[features]
+default=["rust-tls"]
+# Uses rustls as the tls backend(Default)
+rust-tls = ["actix-web/rustls-0_21", "dep:rustls", "rustls-pemfile","lettre/tokio1-rustls-tls"]
+# Uses openssl as the tls backend requires `openssl` to be installed
+native-tls = ["lettre/tokio1-native-tls","openssl", "actix-web/openssl"]

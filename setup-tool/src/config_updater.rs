@@ -1,4 +1,3 @@
-use std::fs::read_to_string;
 use std::path::PathBuf;
 
 use toml_edit::{Document, Item};
@@ -24,7 +23,7 @@ pub fn test_config_update() {
     std::fs::copy(&file, &copy).expect("Failed to copy file");
 
     drop(file);
-    let toml_content = read_to_string(&copy).expect("Failed to read stalwart config file");
+    let toml_content = std::fs::read_to_string(&copy).expect("Failed to read stalwart config file");
 
     let document: Document = toml_content
         .parse()

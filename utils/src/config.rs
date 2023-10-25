@@ -121,6 +121,8 @@ impl Default for PasswordReset {
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Settings {
     pub bind_address: String,
+    #[serde(default = "default_workers")]
+    pub number_of_workers: usize,
     pub database: Database,
     pub tls: Option<TlsConfig>,
     pub email: EmailSetting,
@@ -137,10 +139,14 @@ pub struct Settings {
     #[serde(default)]
     pub is_https: bool,
 }
+fn default_workers() -> usize {
+    2
+}
 impl Settings {
     pub fn new(database: Database, postmaster_address: String, email: EmailSetting) -> Self {
         Self {
             bind_address: "0.0.0.0:5312".to_string(),
+            number_of_workers: 2,
             database,
             tls: None,
             email,

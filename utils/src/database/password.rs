@@ -103,6 +103,7 @@ impl Password {
         *self = result;
         Ok(())
     }
+    /// Takes a password and hashes it using the specified method
     pub fn new_hash(
         password: impl AsRef<str>,
         method: PasswordType,

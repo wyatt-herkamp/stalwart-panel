@@ -19,7 +19,7 @@ jobs:
           profile: minimal
           toolchain: stable
       - uses: Swatinem/rust-cache@v2
-      - run: rustup run stable cargo test --all-features
+      - run: rustup run stable cargo test
   # Ensures that the crate can be built for wasm
   build-frontend:
     name: Build Frontend

@@ -15,7 +15,6 @@ use sea_orm::prelude::*;
 use sea_orm::{ActiveValue, IntoActiveModel};
 use serde::{Deserialize, Serialize};
 use tracing::warn;
-use typeshare::typeshare;
 use utils::database::Password;
 
 pub fn init(service: &mut ServiceConfig) {
@@ -27,13 +26,11 @@ pub fn init(service: &mut ServiceConfig) {
         .service(logout);
 }
 
-#[typeshare]
 #[derive(Deserialize)]
 pub struct LoginRequest {
     pub username: String,
     pub password: String,
 }
-#[typeshare]
 #[derive(Serialize)]
 pub struct LoginResponse {
     panel_user: PanelUser,

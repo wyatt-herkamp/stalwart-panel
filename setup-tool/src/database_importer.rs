@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::str::FromStr;
 
 use inquire::Confirm;
-use log::{debug, info, warn};
+use log::{debug, error, info, warn};
 use sea_orm::sea_query::OnConflict;
 use sea_orm::{ActiveValue, DatabaseConnection, EntityTrait};
 use sqlx::{postgres, Connection, SqliteConnection};
@@ -10,7 +10,7 @@ use sqlx::{postgres, Connection, SqliteConnection};
 use entities::account::AccountType;
 use entities::emails::EmailType;
 use entities::{now, AccountEntity, ActiveAccountModel, EmailActiveModel, EmailEntity};
-use utils::database::password::PasswordType;
+use utils::database::password::{PasswordErrors, PasswordType};
 use utils::database::{EmailAddress, Password};
 
 /// Table Layout for the Account Table
@@ -126,7 +126,7 @@ pub(crate) async fn import_database(
             let mut password = Password::new_hashed(password);
             match password.hash_type() {
                 PasswordType::PlainText => {
-                    if no_questions_asked{
+                    if !no_questions_asked{
                         if let Ok(value) = Confirm::new(
                             r#"Password is in plain text. Would you like to hash it using Argon2. 
                             If not you will need to reset your password to access the Stalwart Panel"#
@@ -135,9 +135,17 @@ pub(crate) async fn import_database(
                             .prompt()
                         {
                             if value {
-                                password
-                                    .hash(PasswordType::Argon2)
-                                    .expect("Failed to hash password");
+                                let result = Password::new_hash(password, PasswordType::Argon2);
+                                match result {
+                                    Ok(ok) => password = ok,
+                                    Err(err) => {
+                                        error!(
+                                            r#"Failed to hash password for user {username}
+                                            The users password will stay as plain text.
+                                            The user will need to reset their password to access the Stalwart Panel.
+                                            Error: {err}"#);
+                                    }
+                                }
                             }
                         };
                     }else{
@@ -166,10 +174,10 @@ pub(crate) async fn import_database(
                     description: ActiveValue::Set(description),
                     group_id: ActiveValue::Set(group_id),
                     password: ActiveValue::Set(password),
-                    require_password_change: Default::default(),
-                    quota: Default::default(),
-                    account_type: Default::default(),
-                    active: Default::default(),
+                    require_password_change: ActiveValue::Set(require_password_changes_on_all_users),
+                    quota: ActiveValue::Set(quota),
+                    account_type: ActiveValue::Set(account_type),
+                    active: ActiveValue::Set(active),
                     backup_email: Default::default(),
                     created: Default::default(),
                 },

@@ -1,16 +1,14 @@
 use std::fs::read_to_string;
 use std::mem;
 use std::path::PathBuf;
-use std::str::FromStr;
 
 use clap::{Parser, Subcommand, ValueEnum};
 use log::{debug, error, info};
 use rand::distributions::Distribution;
 use rand::rngs::StdRng;
-use rand::{Rng, SeedableRng};
+use rand::SeedableRng;
 use sea_orm::sea_query::OnConflict;
 use sea_orm::{ActiveValue, ConnectOptions, DatabaseConnection, EntityTrait};
-use sqlx::Connection;
 use toml_edit::Document;
 
 use entities::account::AccountType;
@@ -100,39 +98,22 @@ impl Commands {
                     database: mem::take(database_name),
                 }),
             },
-            _ => {
-                unreachable!()
-            }
         }
     }
 }
 #[tokio::main]
 async fn main() {
-    let command = Command::parse();
-    let (
-        database_config,
-        import,
+    let Command {
+        stalwart_config: stalwart_config_path,
+        subcommand,
+        skip_import,
         no_questions_asked,
         require_password_changes_on_all_users,
         fresh_database,
-    ) = match command.subcommand {
-        None => (
-            ask_questions::get_database_config(),
-            true,
-            false,
-            false,
-            true,
-        ),
-        Some(mut sub_command) => {
-            let database_config = Some(sub_command.get_database_config());
-            (
-                database_config,
-                command.skip_import,
-                command.no_questions_asked,
-                command.require_password_changes_on_all_users,
-                command.fresh_database,
-            )
-        }
+    } = Command::parse();
+    let database_config = match subcommand {
+        None => ask_questions::get_database_config(),
+        Some(mut sub_command) => Some(sub_command.get_database_config()),
     };
     let Some(database_config) = database_config else {
         error!("No Database Config Provided");
@@ -140,7 +121,7 @@ async fn main() {
     };
     sqlx::any::install_default_drivers();
     let toml_content =
-        read_to_string(&command.stalwart_config).expect("Failed to read stalwart config file");
+        read_to_string(&stalwart_config_path).expect("Failed to read stalwart config file");
 
     let mut database_connection =
         sea_orm::Database::connect(ConnectOptions::new(database_config.to_string()))
@@ -156,7 +137,7 @@ async fn main() {
         .unwrap_or("superuser");
     setup_database(&mut database_connection, super_user_name, fresh_database).await;
 
-    let password = if !command.skip_import {
+    let password = if !skip_import {
         let old_database = stalwart_config["directory"]["sql"]["address"]
             .as_str()
             .expect("Failed to parse old database address");
@@ -196,18 +177,15 @@ async fn main() {
     let email = EmailSetting {
         username: "postmaster".to_string(),
         password,
-        host: format!(
-            "{}:587",
-            stalwart_config["server"]["hostname"]
-                .as_str()
-                .map(|s| s.to_string())
-                .unwrap_or("localhost".to_string())
-        ),
+        host: stalwart_config["server"]["hostname"]
+            .as_str()
+            .map(|s| s.to_string())
+            .unwrap_or("localhost".to_string()),
         encryption: EmailEncryption::StartTLS,
         from: format!("Stalwart Panel<panel@{}>", main_domain),
         reply_to: None,
     };
-    update_config(&database_config, stalwart_config, &command.stalwart_config);
+    update_config(&database_config, stalwart_config, &stalwart_config_path);
 
     info!("Stalwart has been configured. Creating the panel config");
 
@@ -222,7 +200,7 @@ async fn main() {
     std::fs::write(&config_file, &config).expect("Failed to write config file");
 
     let stalwart_manager_config = ManagerConfig {
-        stalwart_config: command.stalwart_config,
+        stalwart_config: stalwart_config_path,
         ..StalwartManagerConfig::default()
     };
 
