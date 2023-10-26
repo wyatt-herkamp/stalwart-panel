@@ -6,10 +6,10 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-tokio = { version = "1", features = ["full"] }
-toml = "0.8.4"
+tokio = { workspace=true, features = ["full"] }
+toml = {workspace=true}
 toml_edit = "0.20.4"
-serde = { version = "1.0", features = ["derive"] }
+serde={workspace=true}
 entities = {path = "../entities"}
 migration = {path = "../migration"}
 utils = {path = "../utils", features = ["sea-orm"]}
@@ -17,8 +17,5 @@ sea-orm = { workspace=true, features = ["runtime-tokio-rustls","macros","sqlx-my
 sqlx = { workspace=true, features = ["sqlite","mysql","postgres", "any"] }
 inquire = "0.6"
 clap = { version = "4",features = ["derive"] }
-log = "0.4"
-
-
-rand = "0.8.5"
-argon2 = "0.5.0"
+log = {workspace=true}
+thiserror.workspace = true

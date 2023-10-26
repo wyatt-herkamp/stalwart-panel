@@ -4,6 +4,9 @@ use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Display};
 
+use rand::distributions::Distribution;
+use rand::prelude::StdRng;
+use rand::SeedableRng;
 use std::ops::Deref;
 use std::str::FromStr;
 use strum::{Display as StrumDisplay, IntoStaticStr};
@@ -96,6 +99,22 @@ impl Debug for Password {
     }
 }
 impl Password {
+    /// Creates a new Password from the AlphaNumeric characters of length 16
+    /// This is used for creating a new password
+    ///
+    /// Returns the password and the string
+    pub fn create_password(method: PasswordType) -> Result<(Self, String), PasswordErrors> {
+        let mut rng = StdRng::from_entropy();
+        let password_str: String = rand::distributions::Alphanumeric
+            .sample_iter(&mut rng)
+            .take(16)
+            .map(char::from)
+            .collect();
+        let password = Self::new_hash(&password_str, method)?;
+        Ok((password, password_str))
+    }
+    /// Hashes the password using the specified method
+    /// Should only be used on PasswordType::PlainText
     pub fn hash(&mut self, method: PasswordType) -> Result<(), PasswordErrors> {
         //Get all characters after the first 6
         let password = &self.password[6..];

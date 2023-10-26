@@ -1,15 +1,15 @@
+use std::borrow::Cow;
 use std::fs::read_to_string;
 use std::mem;
 use std::path::PathBuf;
+use std::process::ExitCode;
 
 use clap::{Parser, Subcommand, ValueEnum};
 use log::{debug, error, info};
-use rand::distributions::Distribution;
-use rand::rngs::StdRng;
-use rand::SeedableRng;
 use sea_orm::sea_query::OnConflict;
 use sea_orm::{ActiveValue, ConnectOptions, DatabaseConnection, EntityTrait};
-use toml_edit::Document;
+use thiserror::Error;
+use toml_edit::{Document, TomlError};
 
 use entities::account::AccountType;
 use entities::groups::{ActiveModel, GroupPermissions};
@@ -19,11 +19,26 @@ use utils::config::{
     Database, EmailEncryption, EmailSetting, MysqlSettings, PostgresSettings, Settings,
     StalwartManagerConfig,
 };
+use utils::database::password::{PasswordErrors, PasswordType};
 use utils::database::Password;
 use utils::stalwart_manager::ManagerConfig;
 
 use crate::config_updater::update_config;
-
+#[derive(Error, Debug)]
+pub enum Error {
+    #[error("Failed to hash password {0}")]
+    PasswordHashError(#[from] PasswordErrors),
+    #[error("Failed to connect to database {0}")]
+    SeaORMError(#[from] sea_orm::error::DbErr),
+    #[error("Failed to connect to database {0}")]
+    SQLXError(#[from] sqlx::Error),
+    #[error(transparent)]
+    IOErr(#[from] std::io::Error),
+    #[error("Failed to Serialize Config {0}. This is a bug Please report it")]
+    TomlSerializeError(#[from] toml::ser::Error),
+    #[error("Failed to Deserialize Config {0}. Error {1}")]
+    TomlDeserializeError(PathBuf, TomlError),
+}
 mod ask_questions;
 mod config_updater;
 mod database_importer;
@@ -102,7 +117,7 @@ impl Commands {
     }
 }
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<ExitCode, Error> {
     let Command {
         stalwart_config: stalwart_config_path,
         subcommand,
@@ -117,44 +132,51 @@ async fn main() {
     };
     let Some(database_config) = database_config else {
         error!("No Database Config Provided");
-        return;
+        return Ok(ExitCode::FAILURE);
     };
     sqlx::any::install_default_drivers();
-    let toml_content =
-        read_to_string(&stalwart_config_path).expect("Failed to read stalwart config file");
+    let toml_content = read_to_string(&stalwart_config_path)?;
 
     let mut database_connection =
-        sea_orm::Database::connect(ConnectOptions::new(database_config.to_string()))
-            .await
-            .expect("Failed to connect to database");
+        sea_orm::Database::connect(ConnectOptions::new(database_config.to_string())).await?;
 
     let stalwart_config: Document = toml_content
         .parse()
-        .expect("Failed to parse stalwart config file");
+        .map_err(|err| Error::TomlDeserializeError(stalwart_config_path.clone(), err))?;
 
     let super_user_name = stalwart_config["directory"]["sql"]["options"]["superuser-group"]
         .as_str()
-        .unwrap_or("superuser");
+        .unwrap_or_else(|| {
+            info!("Missing superuser-group in stalwart config. Defaulting to `superuser`");
+            "superuser"
+        });
     setup_database(&mut database_connection, super_user_name, fresh_database).await;
 
-    let password = if !skip_import {
-        let old_database = stalwart_config["directory"]["sql"]["address"]
-            .as_str()
-            .expect("Failed to parse old database address");
-
-        info!("Importing Old Database");
-        database_importer::import_database(
-            &mut database_connection,
-            old_database,
-            &super_user_name,
-            no_questions_asked,
-            require_password_changes_on_all_users,
-        )
-        .await;
-        "<Please Provide Password>".to_string()
+    let password: Cow<'static, str> = if !skip_import {
+        let old_database = stalwart_config["directory"]["sql"]["address"].as_str();
+        if let Some(value) = old_database {
+            info!("Importing Old Database");
+            if let Err(err) = database_importer::import_database(
+                &mut database_connection,
+                value,
+                &super_user_name,
+                no_questions_asked,
+                require_password_changes_on_all_users,
+            )
+            .await
+            {
+                error!("Unable to import old database. Error {}", err);
+            }
+            Cow::Borrowed("<Please Provide Password>")
+        } else {
+            info!("Skipping Import. Unable to find old database");
+            Cow::Borrowed("<Please Provide Password>")
+        }
     } else {
         info!("Skipping Import. Creating Default Account");
-        create_default_account(&mut database_connection).await
+        create_default_account(&mut database_connection)
+            .await
+            .map(Cow::Owned)?
     };
 
     tokio::spawn(async move {
@@ -176,7 +198,7 @@ async fn main() {
 
     let email = EmailSetting {
         username: "postmaster".to_string(),
-        password,
+        password: password.into_owned(),
         host: stalwart_config["server"]["hostname"]
             .as_str()
             .map(|s| s.to_string())
@@ -191,33 +213,31 @@ async fn main() {
 
     let config = Settings::new(database_config, postmaster_address, email);
 
-    let config = toml::to_string_pretty(&config).expect("Failed to serialize config");
+    let config = toml::to_string_pretty(&config)?;
 
     let config_file = PathBuf::from("stalwart-panel.toml");
     if config_file.exists() {
-        std::fs::remove_file(&config_file).expect("Failed to remove old config file");
+        std::fs::remove_file(&config_file)?;
     }
-    std::fs::write(&config_file, &config).expect("Failed to write config file");
+    std::fs::write(&config_file, &config)?;
 
     let stalwart_manager_config = ManagerConfig {
         stalwart_config: stalwart_config_path,
         ..StalwartManagerConfig::default()
     };
 
-    let stalwart_manager_config =
-        toml::to_string_pretty(&stalwart_manager_config).expect("Failed to serialize config");
+    let stalwart_manager_config = toml::to_string_pretty(&stalwart_manager_config)?;
 
     let stalwart_manager_config_file = PathBuf::from("stalwart-manager.toml");
 
     if stalwart_manager_config_file.exists() {
-        std::fs::remove_file(&stalwart_manager_config_file)
-            .expect("Failed to remove old config file");
+        std::fs::remove_file(&stalwart_manager_config_file)?;
     }
 
-    std::fs::write(&stalwart_manager_config_file, &stalwart_manager_config)
-        .expect("Failed to write config file");
+    std::fs::write(&stalwart_manager_config_file, &stalwart_manager_config)?;
 
     info!("Stalwart Panel has been configured. Please double check stalwart-panel.toml and then run stalwart-panel");
+    return Ok(ExitCode::FAILURE);
 }
 
 async fn setup_database(
@@ -225,8 +245,8 @@ async fn setup_database(
     super_user_name: &str,
     fresh_database: bool,
 ) {
-    // Drop old tables
     if fresh_database {
+        info!("Fresh Database Flag Set. All old data will be deleted");
         Migrator::fresh(database_connection)
             .await
             .expect("Failed to run migrations");
@@ -273,20 +293,10 @@ async fn insert_group(database_connection: &DatabaseConnection, group: ActiveMod
 
 /// Tests to see if the config file is updated correctly
 
-async fn create_default_account(database_connection: &mut DatabaseConnection) -> String {
-    // Generate Random Password
-
-    let mut rng = StdRng::from_entropy();
-    let password: String = rand::distributions::Alphanumeric
-        .sample_iter(&mut rng)
-        .take(16)
-        .map(char::from)
-        .collect();
-
-    // Argon2 Hash the password
-
-    let password_hashed = Password::new_argon2(&password).expect("Failed to hash password");
-
+async fn create_default_account(
+    database_connection: &mut DatabaseConnection,
+) -> Result<String, Error> {
+    let (password_hashed, password) = Password::create_password(PasswordType::Argon2)?;
     let postmaster = ActiveAccountModel {
         id: ActiveValue::Set(1),
         name: ActiveValue::Set("Postmaster".to_string()),
@@ -306,5 +316,5 @@ async fn create_default_account(database_connection: &mut DatabaseConnection) ->
         .await
         .expect("Failed to insert postmaster account");
 
-    password
+    Ok(password)
 }

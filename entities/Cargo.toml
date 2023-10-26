@@ -6,10 +6,10 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-serde = { workspace=true ,features = ["derive"] }
 sea-orm = { workspace=true, features = ["macros","sqlx-mysql","sqlx-postgres"] }
 sqlx = { workspace=true}
-serde_json = {workspace=true}
+serde.workspace = true
+serde_json.workspace = true
 ahash = "0.8"
 rand = {workspace=true,features=["std_rng"]}
 strum = {workspace=true}
