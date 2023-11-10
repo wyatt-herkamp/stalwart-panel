@@ -24,7 +24,7 @@
     "pinia": "^2.1.7",
     "pinia-plugin-persistedstate": "^3.2.0",
     "vue": "^3.3.6",
-    "vue-final-modal": "^4.4.5",
+    "vue-final-modal": "^4.4.6",
     "vue-meta": "3.0.0-alpha.10",
     "vue-router": "^4.2.5"
   },
