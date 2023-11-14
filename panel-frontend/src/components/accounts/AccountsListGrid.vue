@@ -79,7 +79,6 @@
 import { computed, type PropType, ref } from 'vue'
 import type { AccountSimple } from '@/types/user'
 import router from '@/router/index'
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 const props = defineProps({
   accounts: {
     type: Array as PropType<AccountSimple[]>,

@@ -3,15 +3,15 @@ use crate::account::AccountType;
 use crate::emails::Emails;
 use crate::groups::{Column as GroupColumn, GroupPermissions};
 
-use sea_orm::prelude::*;
 use sea_orm::sea_query::SimpleExpr;
+use sea_orm::{prelude::*, FromQueryResult};
 use sea_orm::{JoinType, QuerySelect};
 use serde::Serialize;
 
 use typeshare::typeshare;
 use utils::database::EmailAddress;
 #[typeshare]
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, FromQueryResult)]
 pub struct FullUser {
     pub id: i64,
     pub name: String,
@@ -27,28 +27,9 @@ pub struct FullUser {
     pub group_id: i64,
     pub group_name: String,
     pub group_permissions: GroupPermissions,
+    #[sea_orm(skip)]
     #[serde(skip_serializing_if = "Emails::is_empty")]
     pub emails: Emails,
-}
-impl sea_orm::FromQueryResult for FullUser {
-    fn from_query_result(row: &QueryResult, pre: &str) -> Result<Self, DbErr> {
-        Ok(Self {
-            id: row.try_get(pre, "id")?,
-            name: row.try_get(pre, "name")?,
-            username: row.try_get(pre, "username")?,
-            description: row.try_get(pre, "description")?,
-            require_password_change: row.try_get(pre, "require_password_change")?,
-            quota: row.try_get(pre, "quota")?,
-            account_type: row.try_get(pre, "account_type")?,
-            active: row.try_get(pre, "active")?,
-            backup_email: row.try_get(pre, "backup_email")?,
-            created: row.try_get(pre, "created")?,
-            group_id: row.try_get(pre, "group_id")?,
-            group_name: row.try_get(pre, "group_name")?,
-            group_permissions: row.try_get(pre, "group_permissions")?,
-            emails: Emails::default(),
-        })
-    }
 }
 impl FullUser {
     async fn get_user(

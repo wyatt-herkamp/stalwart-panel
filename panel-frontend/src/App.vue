@@ -24,7 +24,7 @@ import { RouterView } from 'vue-router'
 import { ModalsContainer } from 'vue-final-modal'
 
 import SideNavBar from '@/components/SideNavBar.vue'
-import { onMounted, onUnmounted, ref, watch } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 
 const showSideBar = ref(true)
 
