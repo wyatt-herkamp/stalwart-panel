@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 tokio = { workspace=true, features = ["full"] }
 toml = {workspace=true}
-toml_edit = "0.20.4"
+toml_edit = "0.21.0"
 serde={workspace=true}
 entities = {path = "../entities"}
 migration = {path = "../migration"}
