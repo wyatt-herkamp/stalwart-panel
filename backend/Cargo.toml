@@ -7,39 +7,46 @@ edition = "2021"
 
 [dependencies]
 # Web framework
-actix-web = { version = "4.4",features = ["rustls-0_21"] }
+actix-web = { version = "4.4", features = ["rustls-0_21"] }
 actix-rt = "2"
 actix-service = "2"
 actix-files = "0.6"
 actix-cors = "0.6"
 openssl = { version = "0.10", features = ["v110"], optional = true }
 rustls = { version = "0.21", optional = true }
-rustls-pemfile = { version = "1" ,optional = true}
+rustls-pemfile = { version = "1", optional = true }
 tracing-actix-web = "0.7"
 
 # Tokio
-tokio = { workspace=true, features = ["full"] }
+tokio = { workspace = true, features = ["full"] }
 # Database
-entities = { path = "../entities", default-features = false, features = ["actix"] }
-sea-orm = { workspace=true, features = ["runtime-actix-rustls","macros","sqlx-mysql","sqlx-postgres"] }
-sqlx = {workspace=true}
+entities = { path = "../entities", default-features = false, features = [
+    "actix",
+] }
+sea-orm = { workspace = true, features = [
+    "runtime-actix-rustls",
+    "macros",
+    "sqlx-mysql",
+    "sqlx-postgres",
+] }
+sqlx = { workspace = true }
 # Utils
 thiserror.workspace = true
 this_actix_error = { git = "https://github.com/wyatt-herkamp/this_actix_errors.git" }
 serde.workspace = true
 serde_json.workspace = true
-rust-embed = { version = "8.0.0",features = ["interpolate-folder-path"] }
+rust-embed = { version = "8.0.0", features = ["interpolate-folder-path"] }
 utils = { path = "../utils", features = ["sea-orm", "lettre"] }
-rand.workspace=true
+rand.workspace = true
 # CLI
-clap = { version = "4",features = ["derive"] }
+clap = { version = "4", features = ["derive"] }
 either = "1"
 chrono = "0.4"
 redb = "1"
 futures-util = "0.3"
 
 tracing = "0.1"
-toml = {workspace=true}
+toml = { workspace = true }
 # Templating
 handlebars = { version = "5.0.0-beta.5", features = ["rust-embed"] }
 #Better STD
@@ -48,15 +55,20 @@ ahash = "0.8"
 parking_lot = "0.12"
 # Web API
 
-tracing-subscriber = { version = "0.3",features = ["env-filter"] }
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 [dependencies.lettre]
 version = "0.11.1"
-features = ["builder","smtp-transport"]
+features = ["builder", "smtp-transport"]
 default-features = false
 
 [features]
-default=["rust-tls"]
+default = ["rust-tls"]
 # Uses rustls as the tls backend(Default)
-rust-tls = ["actix-web/rustls-0_21", "dep:rustls", "rustls-pemfile","lettre/tokio1-rustls-tls"]
+rust-tls = [
+    "actix-web/rustls-0_21",
+    "dep:rustls",
+    "rustls-pemfile",
+    "lettre/tokio1-rustls-tls",
+]
 # Uses openssl as the tls backend requires `openssl` to be installed
-native-tls = ["lettre/tokio1-native-tls","openssl", "actix-web/openssl"]
+native-tls = ["lettre/tokio1-native-tls", "openssl", "actix-web/openssl"]
