@@ -3,7 +3,6 @@ pub mod full_user;
 pub mod panel_user;
 
 use sea_orm::entity::prelude::*;
-
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumIter, EnumString};
 use typeshare::typeshare;

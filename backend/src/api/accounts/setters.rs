@@ -1,21 +1,24 @@
-use crate::auth::password_reset::PasswordResetManager;
-use crate::auth::permissions::Permissions;
-use crate::auth::Authentication;
-use crate::headers::Origin;
-use crate::{DatabaseConnection, Error, Result, SharedConfig};
-
-use actix_web::web::Data;
-use actix_web::{put, web, HttpResponse};
-use entities::account::AccountType;
-use entities::account::ActiveModel;
-use entities::emails::EmailType;
-use entities::{emails, AccountEntity, AccountModel, ActiveAccountModel};
-use sea_orm::sea_query::OnConflict;
-use sea_orm::{ActiveModelTrait, ActiveValue, EntityTrait, IntoActiveModel, TryIntoModel};
+use actix_web::{put, web, web::Data, HttpResponse};
+use entities::{
+    account::{AccountType, ActiveModel},
+    emails,
+    emails::EmailType,
+    AccountEntity, AccountModel, ActiveAccountModel,
+};
+use sea_orm::{
+    sea_query::OnConflict, ActiveModelTrait, ActiveValue, EntityTrait, IntoActiveModel,
+    TryIntoModel,
+};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tracing::debug;
 use utils::database::{EmailAddress, OptionalEmailAddress, Password};
+
+use crate::{
+    auth::{password_reset::PasswordResetManager, permissions::Permissions, Authentication},
+    headers::Origin,
+    DatabaseConnection, Error, Result, SharedConfig,
+};
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct UpdateAccount {
     pub name: Option<String>,

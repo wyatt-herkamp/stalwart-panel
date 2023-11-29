@@ -1,18 +1,16 @@
-use std::collections::HashMap;
-use std::str::FromStr;
+use std::{collections::HashMap, str::FromStr};
 
+use entities::{
+    account::AccountType, emails::EmailType, now, AccountEntity, ActiveAccountModel,
+    EmailActiveModel, EmailEntity,
+};
 use inquire::Confirm;
 use log::{debug, error, info, warn};
-use sea_orm::sea_query::OnConflict;
-use sea_orm::{ActiveValue, DatabaseConnection, EntityTrait};
+use sea_orm::{sea_query::OnConflict, ActiveValue, DatabaseConnection, EntityTrait};
 use sqlx::{postgres, Connection, FromRow, SqliteConnection};
+use utils::database::{password::PasswordType, EmailAddress, Password};
 
 use crate::Error;
-use entities::account::AccountType;
-use entities::emails::EmailType;
-use entities::{now, AccountEntity, ActiveAccountModel, EmailActiveModel, EmailEntity};
-use utils::database::password::PasswordType;
-use utils::database::{EmailAddress, Password};
 
 /// Table Layout for the Account Table
 ///
@@ -98,7 +96,6 @@ async fn get_old_data_postgres(old_database: &str) -> Result<Import, Error> {
     })
 }
 /// Imports the Default Stalwart Database to the new database
-///
 
 /// ## Returns
 /// - Ok(true) - If there was an error importing the database

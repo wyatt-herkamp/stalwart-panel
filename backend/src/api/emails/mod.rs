@@ -1,11 +1,9 @@
-use crate::auth::permissions::Permissions;
-use crate::auth::Authentication;
-use crate::error::WebsiteError;
-use crate::{DatabaseConnection, Result};
-use actix_web::web::ServiceConfig;
-use actix_web::{delete, put, web, HttpResponse};
-use entities::emails::{ActiveModel, EmailType};
-use entities::{emails, AccountEntity, EmailActiveModel, EmailEntity};
+use actix_web::{delete, put, web, web::ServiceConfig, HttpResponse};
+use entities::{
+    emails,
+    emails::{ActiveModel, EmailType},
+    AccountEntity, EmailActiveModel, EmailEntity,
+};
 use sea_orm::{
     ActiveModelTrait, ActiveValue, ColumnTrait, DeleteResult, EntityTrait, IntoActiveModel,
     PaginatorTrait, QueryFilter, TryIntoModel,
@@ -13,6 +11,12 @@ use sea_orm::{
 use serde::Deserialize;
 use tracing::debug;
 use utils::database::EmailAddress;
+
+use crate::{
+    auth::{permissions::Permissions, Authentication},
+    error::WebsiteError,
+    DatabaseConnection, Result,
+};
 pub fn init(service: &mut ServiceConfig) {
     service.service(add_or_update).service(delete_email);
 }

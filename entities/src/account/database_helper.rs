@@ -1,16 +1,18 @@
-use crate::account::AccountType;
-use crate::emails::{EmailType, Emails};
-use crate::{AccountEntity, AccountModel};
-use sea_orm::prelude::*;
-use sea_orm::sea_query::IntoCondition;
-use sea_orm::{FromQueryResult, JoinType, QueryOrder, QuerySelect};
+use sea_orm::{
+    prelude::*, sea_query::IntoCondition, FromQueryResult, JoinType, QueryOrder, QuerySelect,
+};
 use serde::{Deserialize, Serialize};
 use typeshare::typeshare;
 use utils::database::EmailAddress;
 
+use crate::{
+    account::AccountType,
+    emails::{EmailType, Emails},
+    AccountEntity, AccountModel,
+};
+
 pub type AccountWithEmails = (AccountModel, Emails);
-use crate::account::Column as AccountColumn;
-use crate::emails::Column as EmailColumn;
+use crate::{account::Column as AccountColumn, emails::Column as EmailColumn};
 
 pub async fn get_account_with_associated_emails_by_id(
     connection: &impl ConnectionTrait,

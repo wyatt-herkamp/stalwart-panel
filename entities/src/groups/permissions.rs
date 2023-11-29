@@ -1,5 +1,5 @@
-use sea_orm::sea_query::{ArrayType, ColumnType, ValueType, ValueTypeErr};
 use sea_orm::{
+    sea_query::{ArrayType, ColumnType, ValueType, ValueTypeErr},
     ColIdx, DbErr, IntoActiveValue, JsonValue, QueryResult, TryGetError, TryGetable, Value,
 };
 use serde::{Deserialize, Serialize};

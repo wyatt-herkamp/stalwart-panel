@@ -13,6 +13,4 @@
   flex-wrap: wrap;
   width: 100%;
 }
-.formGroup > div {
-}
 </style>

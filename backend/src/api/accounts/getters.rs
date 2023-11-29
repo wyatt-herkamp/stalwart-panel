@@ -1,11 +1,11 @@
-use crate::auth::permissions::Permissions;
-use crate::auth::Authentication;
-use crate::DatabaseConnection;
-
 use actix_web::{get, web, HttpResponse};
-use entities::account::database_helper::AccountSimple;
-use entities::account::full_user::FullUser;
+use entities::account::{database_helper::AccountSimple, full_user::FullUser};
 use serde::{Deserialize, Serialize};
+
+use crate::{
+    auth::{permissions::Permissions, Authentication},
+    DatabaseConnection,
+};
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct List {

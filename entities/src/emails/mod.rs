@@ -2,8 +2,7 @@ pub mod database_helper;
 mod emails_type;
 
 pub use emails_type::Emails;
-use sea_orm::entity::prelude::*;
-use sea_orm::prelude::DateTimeWithTimeZone;
+use sea_orm::{entity::prelude::*, prelude::DateTimeWithTimeZone};
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumString};
 use typeshare::typeshare;

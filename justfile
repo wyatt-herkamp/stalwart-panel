@@ -4,7 +4,7 @@ project_root := justfile_directory()
 panel_frontend := join(project_root,"panel-frontend")
 
 format:
-  cargo fmt --all
+  cargo +nightly fmt --all
   cd {{panel_frontend}}; npm run format --write src/
 
 update:

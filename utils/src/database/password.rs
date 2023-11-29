@@ -1,14 +1,15 @@
-use argon2::password_hash::{Error, SaltString};
-use argon2::{Argon2, PasswordHasher, PasswordVerifier};
-use rand::rngs::OsRng;
-use serde::{Deserialize, Serialize};
-use std::fmt::{Debug, Display};
+use std::{
+    fmt::{Debug, Display},
+    ops::Deref,
+    str::FromStr,
+};
 
-use rand::distributions::Distribution;
-use rand::prelude::StdRng;
-use rand::SeedableRng;
-use std::ops::Deref;
-use std::str::FromStr;
+use argon2::{
+    password_hash::{Error, SaltString},
+    Argon2, PasswordHasher, PasswordVerifier,
+};
+use rand::{distributions::Distribution, prelude::StdRng, rngs::OsRng, SeedableRng};
+use serde::{Deserialize, Serialize};
 use strum::{Display as StrumDisplay, IntoStaticStr};
 use thiserror::Error;
 
@@ -259,9 +260,12 @@ impl Display for Password {
 
 #[cfg(feature = "sea-orm")]
 mod database {
+    use sea_orm::{
+        sea_query::{ArrayType, Nullable, ValueType, ValueTypeErr},
+        ColIdx, ColumnType, QueryResult, TryGetError, TryGetable, Value,
+    };
+
     use crate::database::Password;
-    use sea_orm::sea_query::{ArrayType, Nullable, ValueType, ValueTypeErr};
-    use sea_orm::{ColIdx, ColumnType, QueryResult, TryGetError, TryGetable, Value};
 
     impl From<Password> for Value {
         fn from(value: Password) -> Self {
@@ -307,8 +311,9 @@ mod database {
 /// This will redact the password when serializing
 /// On deserialization, it will hash the password
 mod _serde {
-    use crate::database::password::Password;
     use log::warn;
+
+    use crate::database::password::Password;
 
     impl serde::Serialize for Password {
         fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>

@@ -1,9 +1,12 @@
+use std::{
+    fmt::{Display, Formatter},
+    path::PathBuf,
+};
+
 use chrono::Duration;
-use std::fmt::{Display, Formatter};
-use std::path::PathBuf;
+use serde::{Deserialize, Serialize};
 
 use crate::database::password::PasswordType;
-use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(tag = "type", content = "settings")]

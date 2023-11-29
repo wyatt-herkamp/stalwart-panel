@@ -1,8 +1,9 @@
 use std::borrow::Cow;
 
-use crate::config::Database;
 use serde::{Deserialize, Serialize};
 use toml_edit::{Item, Value};
+
+use crate::config::Database;
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct SQLSettings {

@@ -1,13 +1,11 @@
-use actix_web::http::header::ToStrError;
-use actix_web::ResponseError;
+use actix_web::{http::header::ToStrError, ResponseError};
 use either::Either;
 use sea_orm::DbErr;
-use serde::ser::SerializeStruct;
-use serde::Serialize;
-
-use crate::auth::session::SessionError;
+use serde::{ser::SerializeStruct, Serialize};
 use this_actix_error::ActixError;
 use thiserror::Error;
+
+use crate::auth::session::SessionError;
 
 #[derive(Debug, Error, ActixError)]
 pub enum WebsiteError {

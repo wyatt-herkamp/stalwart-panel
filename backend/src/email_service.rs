@@ -1,21 +1,23 @@
-use flume::{Receiver, Sender};
-use handlebars::Handlebars;
+use std::{
+    fmt::{Debug, Formatter},
+    io,
+};
 
-use futures_util::FutureExt;
-use futures_util::StreamExt;
-use lettre::message::{header, MessageBuilder, MultiPart, SinglePart};
-use lettre::transport::smtp::authentication::Credentials;
-use lettre::transport::smtp::Error as SmtpError;
-use lettre::{AsyncSmtpTransport, AsyncTransport, Message};
+use flume::{Receiver, Sender};
+use futures_util::{FutureExt, StreamExt};
+use handlebars::Handlebars;
+use lettre::{
+    message::{header, MessageBuilder, MultiPart, SinglePart},
+    transport::smtp::{authentication::Credentials, Error as SmtpError},
+    AsyncSmtpTransport, AsyncTransport, Message,
+};
 use rust_embed::RustEmbed;
 use serde::Serialize;
-use std::fmt::{Debug, Formatter};
-use std::io;
-
-use tracing::log::log_enabled;
-use tracing::{debug, error, info, warn};
-use utils::config::{EmailEncryption, EmailSetting};
-use utils::database::EmailAddress;
+use tracing::{debug, error, info, log::log_enabled, warn};
+use utils::{
+    config::{EmailEncryption, EmailSetting},
+    database::EmailAddress,
+};
 
 #[derive(RustEmbed)]
 #[folder = "$CARGO_MANIFEST_DIR/resources/emails"]

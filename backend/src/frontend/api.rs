@@ -1,21 +1,24 @@
-use crate::auth::password_reset::PasswordResetManager;
-use crate::auth::session::{Session, SessionManager};
-
-use crate::headers::Origin;
-use crate::{DatabaseConnection, Error};
-use crate::{Result, SharedConfig};
-use actix_web::cookie::{CookieBuilder, Expiration, SameSite};
-
-use actix_web::web::{Data, ServiceConfig};
-use actix_web::{get, post, web, HttpRequest, HttpResponse};
+use actix_web::{
+    cookie::{CookieBuilder, Expiration, SameSite},
+    get, post, web,
+    web::{Data, ServiceConfig},
+    HttpRequest, HttpResponse,
+};
 use chrono::Duration;
-use entities::account::panel_user::PanelUser;
-use entities::AccountEntity;
-use sea_orm::prelude::*;
-use sea_orm::{ActiveValue, IntoActiveModel};
+use entities::{account::panel_user::PanelUser, AccountEntity};
+use sea_orm::{prelude::*, ActiveValue, IntoActiveModel};
 use serde::{Deserialize, Serialize};
 use tracing::warn;
 use utils::database::Password;
+
+use crate::{
+    auth::{
+        password_reset::PasswordResetManager,
+        session::{Session, SessionManager},
+    },
+    headers::Origin,
+    DatabaseConnection, Error, Result, SharedConfig,
+};
 
 pub fn init(service: &mut ServiceConfig) {
     service

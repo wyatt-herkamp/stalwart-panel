@@ -1,15 +1,17 @@
-use super::{Column as AccountColumn, Entity as AccountEntity, Relation as AccountRelation};
-use crate::emails::{Column as EmailColumn, EmailType};
-use crate::groups::{Column as GroupColumn, GroupPermissions};
-
-use crate::ActiveAccountModel;
-use sea_orm::prelude::*;
-use sea_orm::sea_query::SimpleExpr;
-use sea_orm::ActiveValue::Unchanged;
-use sea_orm::{FromQueryResult, IntoActiveModel, JoinType, QuerySelect};
+use sea_orm::{
+    prelude::*, sea_query::SimpleExpr, ActiveValue::Unchanged, FromQueryResult, IntoActiveModel,
+    JoinType, QuerySelect,
+};
 use serde::{Deserialize, Serialize};
 use typeshare::typeshare;
 use utils::database::{EmailAddress, Password};
+
+use super::{Column as AccountColumn, Entity as AccountEntity, Relation as AccountRelation};
+use crate::{
+    emails::{Column as EmailColumn, EmailType},
+    groups::{Column as GroupColumn, GroupPermissions},
+    ActiveAccountModel,
+};
 
 #[typeshare]
 #[derive(FromQueryResult, Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]

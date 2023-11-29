@@ -1,14 +1,14 @@
-use super::Column as EmailColumn;
-use crate::emails::EmailType;
-use crate::{EmailEntity, EmailModel};
-
-use sea_orm::ColumnTrait;
-use sea_orm::{ConnectionTrait, DbErr, EntityTrait, Order, QueryFilter, QueryOrder, Values};
-
-use serde::Serialize;
 use std::ops::Deref;
+
+use sea_orm::{
+    ColumnTrait, ConnectionTrait, DbErr, EntityTrait, Order, QueryFilter, QueryOrder, Values,
+};
+use serde::Serialize;
 use typeshare::typeshare;
 use utils::database::EmailAddress;
+
+use super::Column as EmailColumn;
+use crate::{emails::EmailType, EmailEntity, EmailModel};
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Default)]
 #[typeshare]
 pub struct Emails(Vec<EmailModel>);

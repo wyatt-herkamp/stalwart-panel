@@ -1,10 +1,13 @@
-use crate::auth::Authentication;
-use crate::{DatabaseConnection, Error, SharedConfig};
-use actix_web::web::{Data, ServiceConfig};
-use actix_web::{get, put, HttpResponse};
+use actix_web::{
+    get, put,
+    web::{Data, ServiceConfig},
+    HttpResponse,
+};
 use entities::account::panel_user::PanelUser;
 use sea_orm::{ActiveModelTrait, ActiveValue, IntoActiveModel};
 use utils::database::{EmailAddress, Password};
+
+use crate::{auth::Authentication, DatabaseConnection, Error, SharedConfig};
 
 pub fn init(service: &mut ServiceConfig) {
     service.service(me).service(change_password);

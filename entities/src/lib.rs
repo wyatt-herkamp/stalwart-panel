@@ -8,8 +8,7 @@ pub use account::{
 use chrono::Local;
 pub use emails::{ActiveModel as EmailActiveModel, Entity as EmailEntity, Model as EmailModel};
 pub use groups::{ActiveModel as ActiveGroupModel, Entity as GroupEntity, Model as GroupModel};
-use sea_orm::prelude::DateTimeWithTimeZone;
-use sea_orm::ActiveValue;
+use sea_orm::{prelude::DateTimeWithTimeZone, ActiveValue};
 
 /// Returns an ActiveValue with the current time.
 pub fn now() -> ActiveValue<DateTimeWithTimeZone> {

@@ -1,7 +1,10 @@
 [package]
 name = "migration"
-version = "0.1.0"
-edition = "2021"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
 publish = false
 
 [lib]
@@ -13,8 +16,6 @@ tokio = { version = "1", features = ["full"] }
 entities = { path = "../entities" }
 [dependencies.sea-orm-migration]
 version = "0.12"
-features = [
-    "runtime-tokio-rustls"
-]
+features = ["runtime-tokio-rustls"]
 
 [dev-dependencies]

@@ -1,16 +1,23 @@
-use crate::auth::session::{Session, SessionManager};
-use crate::auth::AuthenticationRaw;
-use crate::error::WebsiteError;
-use actix_service::{forward_ready, Service, Transform};
-use actix_web::body::{BoxBody, EitherBody};
-
-use actix_web::dev::{ServiceRequest, ServiceResponse};
-use actix_web::http::{header, Method};
-use actix_web::web::Data;
-use actix_web::{Error, HttpMessage, HttpResponse};
-use futures_util::future::{ready, LocalBoxFuture, Ready};
 use std::rc::Rc;
+
+use actix_service::{forward_ready, Service, Transform};
+use actix_web::{
+    body::{BoxBody, EitherBody},
+    dev::{ServiceRequest, ServiceResponse},
+    http::{header, Method},
+    web::Data,
+    Error, HttpMessage, HttpResponse,
+};
+use futures_util::future::{ready, LocalBoxFuture, Ready};
 use tracing::log::warn;
+
+use crate::{
+    auth::{
+        session::{Session, SessionManager},
+        AuthenticationRaw,
+    },
+    error::WebsiteError,
+};
 
 pub struct HandleSession(pub Data<SessionManager>);
 

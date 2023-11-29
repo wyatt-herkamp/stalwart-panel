@@ -1,8 +1,6 @@
-use std::fmt::Display;
+use std::{fmt::Display, ops::Deref, str::FromStr};
 
 use serde::Serialize;
-use std::ops::Deref;
-use std::str::FromStr;
 use thiserror::Error;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Error)]
@@ -120,9 +118,9 @@ impl Display for EmailAddress {
 }
 #[cfg(feature = "lettre")]
 mod _lettre {
+    use lettre::{message::Mailbox, Address};
+
     use crate::database::EmailAddress;
-    use lettre::message::Mailbox;
-    use lettre::Address;
 
     impl Into<Mailbox> for EmailAddress {
         fn into(self) -> Mailbox {
@@ -139,9 +137,12 @@ mod _lettre {
 
 #[cfg(feature = "sea-orm")]
 mod database {
+    use sea_orm::{
+        sea_query::{ArrayType, Nullable, ValueType, ValueTypeErr},
+        ColIdx, ColumnType, QueryResult, TryGetError, TryGetable, Value,
+    };
+
     use crate::database::email_address::EmailAddress;
-    use sea_orm::sea_query::{ArrayType, Nullable, ValueType, ValueTypeErr};
-    use sea_orm::{ColIdx, ColumnType, QueryResult, TryGetError, TryGetable, Value};
 
     impl From<EmailAddress> for Value {
         fn from(value: EmailAddress) -> Self {

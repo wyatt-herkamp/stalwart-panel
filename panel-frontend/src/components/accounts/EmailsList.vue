@@ -95,8 +95,8 @@ const primaryElement = ref<number | undefined>(
 )
 
 function updateEmailType(index: number, emailType: EmailType) {
-  console.log(`Email type changed to ${emailType}`)
-  console.log(`Primary email index: ${primaryElement.value}`)
+  console.debug(`Email type changed to ${emailType}`)
+  console.debug(`Primary email index: ${primaryElement.value}`)
   if (emailType == EmailType.Primary) {
     if (primaryElement.value != undefined) {
       emails.value[primaryElement.value].email_type = EmailType.Alias

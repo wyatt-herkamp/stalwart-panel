@@ -1,12 +1,12 @@
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc,
+};
+
 use chrono::{DateTime, Duration, Local, NaiveDateTime, Utc};
-use rand::distributions::Alphanumeric;
-use rand::rngs::StdRng;
-use rand::{Rng, SeedableRng};
+use rand::{distributions::Alphanumeric, rngs::StdRng, Rng, SeedableRng};
 use redb::{CommitError, Database, Error, ReadableTable, TableDefinition};
 use serde::Serialize;
-
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
 use thiserror::Error;
 use tracing::{debug, error, info};
 use utils::config::SessionManager as SessionConfig;

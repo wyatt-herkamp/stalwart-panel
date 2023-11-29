@@ -1,11 +1,14 @@
-use crate::{Error, SharedConfig};
-use actix_web::http::header::{HOST, ORIGIN};
-use actix_web::web::Data;
-use actix_web::FromRequest;
+use std::{fmt::Display, ops::Deref};
+
+use actix_web::{
+    http::header::{HOST, ORIGIN},
+    web::Data,
+    FromRequest,
+};
 use serde::Serialize;
-use std::fmt::Display;
-use std::ops::Deref;
 use tracing::debug;
+
+use crate::{Error, SharedConfig};
 
 #[derive(Debug, Clone, Serialize)]
 pub struct Origin {

@@ -1,7 +1,10 @@
-use crate::emails::{Column as EmailColumn, EmailType};
-use crate::{EmailEntity, EmailModel};
 use sea_orm::prelude::*;
 use utils::database::EmailAddress;
+
+use crate::{
+    emails::{Column as EmailColumn, EmailType},
+    EmailEntity, EmailModel,
+};
 pub async fn get_by_address(
     connection: &impl ConnectionTrait,
     email_address: EmailAddress,

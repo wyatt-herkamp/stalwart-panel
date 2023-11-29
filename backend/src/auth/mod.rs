@@ -5,14 +5,14 @@ pub mod password_reset;
 pub mod permissions;
 pub mod session;
 
-use crate::auth::permissions::Permissions;
-use crate::auth::session::Session;
-use crate::{DatabaseConnection, Error};
-use actix_web::dev::Payload;
-
-use actix_web::{FromRequest, HttpMessage, HttpRequest};
+use actix_web::{dev::Payload, FromRequest, HttpMessage, HttpRequest};
 use entities::account::panel_user::PanelUser;
 use futures_util::future::LocalBoxFuture;
+
+use crate::{
+    auth::{permissions::Permissions, session::Session},
+    DatabaseConnection, Error,
+};
 
 /// The raw authentication data.
 /// Pulled from the middleware.

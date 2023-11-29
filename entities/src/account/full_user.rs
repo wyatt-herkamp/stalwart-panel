@@ -1,15 +1,14 @@
-use super::{Column as AccountColumn, Entity as AccountEntity, Relation as AccountRelation};
-use crate::account::AccountType;
-use crate::emails::Emails;
-use crate::groups::{Column as GroupColumn, GroupPermissions};
-
-use sea_orm::sea_query::SimpleExpr;
-use sea_orm::{prelude::*, FromQueryResult};
-use sea_orm::{JoinType, QuerySelect};
+use sea_orm::{prelude::*, sea_query::SimpleExpr, FromQueryResult, JoinType, QuerySelect};
 use serde::Serialize;
-
 use typeshare::typeshare;
 use utils::database::EmailAddress;
+
+use super::{Column as AccountColumn, Entity as AccountEntity, Relation as AccountRelation};
+use crate::{
+    account::AccountType,
+    emails::Emails,
+    groups::{Column as GroupColumn, GroupPermissions},
+};
 #[typeshare]
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, FromQueryResult)]
 pub struct FullUser {

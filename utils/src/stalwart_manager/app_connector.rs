@@ -1,5 +1,4 @@
-use serde::de::DeserializeOwned;
-use serde::Serialize;
+use serde::{de::DeserializeOwned, Serialize};
 
 /// A way of talking to Stalwart and telling it what to do even though its a different process
 pub trait AppConnection {
@@ -35,9 +34,11 @@ pub mod none {
 }
 
 pub mod linux_connection {
-    use super::AppConnection;
-    use serde::{Deserialize, Serialize};
     use std::fmt::Debug;
+
+    use serde::{Deserialize, Serialize};
+
+    use super::AppConnection;
     #[derive(Debug, Deserialize, Serialize, Clone)]
     pub struct LinuxConnectionConfig {
         pub service_path: String,

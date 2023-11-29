@@ -6,7 +6,7 @@
 </template>
 <script setup lang="ts">
 import '@/assets/styles/form.scss'
-const props = defineProps<{
+defineProps<{
   id: string
 }>()
 let value = defineModel<string>({

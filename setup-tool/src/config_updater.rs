@@ -1,9 +1,10 @@
 use std::path::PathBuf;
 
 use toml_edit::{Document, Item};
-
-use utils::config::Database;
-use utils::stalwart_config::sql::{SQLColumns, SQLQuery};
+use utils::{
+    config::Database,
+    stalwart_config::sql::{SQLColumns, SQLQuery},
+};
 
 #[test]
 pub fn test_config_update() {

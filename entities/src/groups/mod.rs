@@ -1,8 +1,7 @@
 mod permissions;
 
-use sea_orm::entity::prelude::*;
-
 pub use permissions::GroupPermissions;
+use sea_orm::entity::prelude::*;
 use serde::Serialize;
 use typeshare::typeshare;
 

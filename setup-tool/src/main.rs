@@ -1,27 +1,29 @@
-use std::borrow::Cow;
-use std::fs::read_to_string;
-use std::mem;
-use std::path::PathBuf;
-use std::process::ExitCode;
+use std::{borrow::Cow, fs::read_to_string, mem, path::PathBuf, process::ExitCode};
 
 use clap::{Parser, Subcommand, ValueEnum};
+use entities::{
+    account::AccountType,
+    groups::{ActiveModel, GroupPermissions},
+    now, AccountEntity, ActiveAccountModel, GroupEntity,
+};
 use log::{debug, error, info};
-use sea_orm::sea_query::OnConflict;
-use sea_orm::{ActiveValue, ConnectOptions, DatabaseConnection, EntityTrait};
+use migration::{Migrator, MigratorTrait};
+use sea_orm::{
+    sea_query::OnConflict, ActiveValue, ConnectOptions, DatabaseConnection, EntityTrait,
+};
 use thiserror::Error;
 use toml_edit::{Document, TomlError};
-
-use entities::account::AccountType;
-use entities::groups::{ActiveModel, GroupPermissions};
-use entities::{now, AccountEntity, ActiveAccountModel, GroupEntity};
-use migration::{Migrator, MigratorTrait};
-use utils::config::{
-    Database, EmailEncryption, EmailSetting, MysqlSettings, PostgresSettings, Settings,
-    StalwartManagerConfig,
+use utils::{
+    config::{
+        Database, EmailEncryption, EmailSetting, MysqlSettings, PostgresSettings, Settings,
+        StalwartManagerConfig,
+    },
+    database::{
+        password::{PasswordErrors, PasswordType},
+        Password,
+    },
+    stalwart_manager::ManagerConfig,
 };
-use utils::database::password::{PasswordErrors, PasswordType};
-use utils::database::Password;
-use utils::stalwart_manager::ManagerConfig;
 
 use crate::config_updater::update_config;
 #[derive(Error, Debug)]

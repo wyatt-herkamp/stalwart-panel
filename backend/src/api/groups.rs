@@ -1,8 +1,8 @@
-use crate::auth::permissions::Permissions;
-use actix_web::web::ServiceConfig;
-use actix_web::{get, HttpResponse};
+use actix_web::{get, web::ServiceConfig, HttpResponse};
 use entities::GroupEntity;
 use sea_orm::prelude::*;
+
+use crate::auth::permissions::Permissions;
 pub fn init(service: &mut ServiceConfig) {
     service.service(get_groups);
 }

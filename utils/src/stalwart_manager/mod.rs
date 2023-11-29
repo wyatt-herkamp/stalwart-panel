@@ -1,9 +1,10 @@
-use crate::config::StalwartManagerConfig;
-use crate::stalwart_manager::app_connector::AppConnection;
-use log::warn;
 use std::path::PathBuf;
+
+use log::warn;
 use thiserror::Error;
 use toml_edit::{Array, Document, Formatted, Item, Table, Value};
+
+use crate::{config::StalwartManagerConfig, stalwart_manager::app_connector::AppConnection};
 
 pub mod app_connector;
 #[cfg(not(target_os = "linux"))]

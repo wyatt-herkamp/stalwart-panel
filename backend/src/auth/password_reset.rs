@@ -1,15 +1,17 @@
-use crate::email_service::{template, Email, EmailAccess, EmailDebug};
-use crate::headers::Origin;
+use std::{ops::DerefMut, sync::Arc};
+
 use ahash::HashMap;
 use chrono::{DateTime, Local};
-
 use parking_lot::{Mutex, MutexGuard};
 use rand::distributions::Distribution;
 use serde::Serialize;
-use std::ops::DerefMut;
-use std::sync::Arc;
 use tracing::debug;
 use utils::database::EmailAddress;
+
+use crate::{
+    email_service::{template, Email, EmailAccess, EmailDebug},
+    headers::Origin,
+};
 
 #[derive(Debug, Serialize)]
 pub struct PasswordResetEmail<'a> {

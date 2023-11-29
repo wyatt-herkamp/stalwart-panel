@@ -1,6 +1,7 @@
-use crate::DatabaseType;
 use inquire::{Select, Text};
 use utils::config::Database;
+
+use crate::DatabaseType;
 
 pub fn get_database_config() -> Option<Database> {
     let database_type = Select::new("Database Type", vec!["Mysql", "Postgres"])

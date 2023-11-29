@@ -5,35 +5,32 @@ pub mod error;
 pub mod frontend;
 pub mod headers;
 
+use std::{fs::File, io, io::BufReader, path::PathBuf};
+
 use actix_cors::Cors;
-use actix_web::web::Data;
-use actix_web::{App, HttpServer, Scope};
+use actix_web::{web::Data, App, HttpServer, Scope};
 use clap::Parser;
+pub use error::WebsiteError as Error;
 use parking_lot::Mutex;
 use rustls::{Certificate, PrivateKey, ServerConfig as RustlsServerConfig};
 use rustls_pemfile::{certs, pkcs8_private_keys};
 use sea_orm::{ConnectOptions, Database};
-use std::fs::File;
-use std::io;
-use std::io::BufReader;
-
-use std::path::PathBuf;
 use tokio::fs::read_to_string;
 use tracing::info;
-
 use tracing_actix_web::TracingLogger;
-
-use utils::config::{Settings, TlsConfig};
-use utils::stalwart_manager::StalwartManager;
-
-use crate::auth::middleware::HandleSession;
-use crate::auth::password_reset::PasswordResetManager;
-use crate::auth::session::SessionManager;
-use crate::email_service::EmailService;
-pub use error::WebsiteError as Error;
-
 use tracing_subscriber::prelude::*;
-use utils::database::password::PasswordType;
+use utils::{
+    config::{Settings, TlsConfig},
+    database::password::PasswordType,
+    stalwart_manager::StalwartManager,
+};
+
+use crate::{
+    auth::{
+        middleware::HandleSession, password_reset::PasswordResetManager, session::SessionManager,
+    },
+    email_service::EmailService,
+};
 
 #[cfg(not(any(feature = "rust-tls", feature = "native-tls")))]
 compile_error!("Feature 'rust-tls' or 'native-tls' must be enabled to use stalwart-panel as lettre requires one of these features to be enabled.");
