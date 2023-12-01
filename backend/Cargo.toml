@@ -17,7 +17,7 @@ actix-files = "0.6"
 actix-cors = "0.6"
 openssl = { version = "0.10", features = ["v110"], optional = true }
 rustls = { version = "0.21", optional = true }
-rustls-pemfile = { version = "1", optional = true }
+rustls-pemfile = { version = "2", optional = true }
 tracing-actix-web = "0.7"
 
 # Tokio
