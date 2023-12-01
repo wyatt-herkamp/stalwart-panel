@@ -15,6 +15,12 @@ pub enum Database {
     Postgres(PostgresSettings),
 }
 impl Database {
+    pub fn debug_message(&self) -> String {
+        match self {
+            Database::Mysql(mysql) => mysql.debug_message(),
+            Database::Postgres(postgres) => postgres.debug_message(),
+        }
+    }
     pub fn test() -> Self {
         Database::Postgres(PostgresSettings {
             user: "postgres".to_string(),
@@ -49,12 +55,25 @@ pub struct MysqlSettings {
     pub host: String,
     pub database: String,
 }
+impl MysqlSettings {
+    pub fn debug_message(&self) -> String {
+        format!("mysql://{}:****@{}/{}", self.user, self.host, self.database)
+    }
+}
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct PostgresSettings {
     pub user: String,
     pub password: String,
     pub host: String,
     pub database: String,
+}
+impl PostgresSettings {
+    pub fn debug_message(&self) -> String {
+        format!(
+            "postgres://{}:****@{}/{}",
+            self.user, self.host, self.database
+        )
+    }
 }
 
 impl Display for PostgresSettings {

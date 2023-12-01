@@ -1,0 +1,33 @@
+@import '@/assets/styles/variables.scss';
+
+.tabsTrigger {
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  border: none;
+  background-color: #000;
+  color: #fff;
+  font-weight: bold;
+  cursor: pointer;
+}
+.tabsTrigger[data-state='active'] {
+    color: $accent-color;
+}
+.dangerTabsTrigger {
+  background-color: $dangerColor;
+}
+
+.tabs {
+    display: flex;
+    background-color: $color-primary;
+    flex-direction: column;
+    border: 0 2px 10px $color-secondary;
+}
+
+.tabsList {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: row;
+    padding: .5rem;
+    gap: 1rem;
+    background-color: $color-secondary;
+}

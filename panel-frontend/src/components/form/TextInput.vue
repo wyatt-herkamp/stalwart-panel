@@ -17,7 +17,6 @@
   </section>
 </template>
 <script setup lang="ts">
-import { ref, watch } from 'vue'
 import '@/assets/styles/form.scss'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 defineProps({

@@ -14,7 +14,7 @@ module.exports = {
   },
   rules: {
     'vue/multi-word-component-names': ['error', {
-      'ignores': ['Switch', 'Password']
+      'ignores': ['Switch', 'Password', 'Spinner', 'Tab', 'Tabs']
     }]
   }
 }

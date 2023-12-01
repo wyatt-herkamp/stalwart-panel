@@ -12,8 +12,6 @@ use actix_web::{web::Data, App, HttpServer, Scope};
 use clap::Parser;
 pub use error::WebsiteError as Error;
 use parking_lot::Mutex;
-use rustls::{Certificate, PrivateKey, ServerConfig as RustlsServerConfig};
-use rustls_pemfile::{certs, pkcs8_private_keys};
 use sea_orm::{ConnectOptions, Database};
 use tokio::fs::read_to_string;
 use tracing::info;
@@ -90,6 +88,7 @@ async fn main() -> io::Result<()> {
         is_https,
         ..
     } = server_config.clone();
+    info!("Connecting to database `{}`", database.debug_message());
     let database = Database::connect(ConnectOptions::new(database.to_string()))
         .await
         .map(Data::new)
@@ -149,6 +148,8 @@ async fn main() -> io::Result<()> {
         certificate_chain,
     }) = tls
     {
+        use rustls::{Certificate, PrivateKey, ServerConfig as RustlsServerConfig};
+        use rustls_pemfile::{certs, pkcs8_private_keys};
         let mut cert_file = BufReader::new(File::open(certificate_chain)?);
         let mut key_file = BufReader::new(File::open(private_key)?);
 
