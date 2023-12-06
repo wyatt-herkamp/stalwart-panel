@@ -23,7 +23,7 @@
     "normalize.css": "^8.0",
     "pinia": "^2.1.7",
     "pinia-plugin-persistedstate": "^3.2.0",
-    "radix-vue": "^1.2.3",
+    "radix-vue": "^1.2.4",
     "vue": "^3.3.9",
     "vue-final-modal": "^4.4.6",
     "vue-meta": "3.0.0-alpha.10",
