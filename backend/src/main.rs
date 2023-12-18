@@ -58,6 +58,8 @@ pub struct SharedConfig {
 }
 #[actix_web::main]
 async fn main() -> io::Result<()> {
+    human_panic::setup_panic!();
+
     let collector = tracing_subscriber::fmt()
         .with_max_level(tracing::Level::DEBUG)
         .finish();

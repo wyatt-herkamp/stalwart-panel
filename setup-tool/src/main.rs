@@ -120,6 +120,8 @@ impl Commands {
 }
 #[tokio::main]
 async fn main() -> Result<ExitCode, Error> {
+    human_panic::setup_panic!();
+
     let Command {
         stalwart_config: stalwart_config_path,
         subcommand,

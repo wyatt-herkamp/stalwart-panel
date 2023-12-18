@@ -7,6 +7,7 @@ resolver = "2"
 version = "0.1.0"
 license = "MIT"
 edition = "2021"
+homepage = "https://github.com/wyatt-herkamp/stalwart-panel"
 repository = "https://github.com/wyatt-herkamp/stalwart-panel"
 authors = ["Wyatt Jacob Herkamp <wherkamp@gmail.com>"]
 
@@ -23,6 +24,6 @@ toml = "0.8"
 toml_edit = "0.21"
 thiserror = "1"
 log = "0.4"
-
+human-panic = "1"
 [profile.dev.package.tokio]
 opt-level = 3

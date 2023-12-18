@@ -6,7 +6,7 @@ authors.workspace = true
 license.workspace = true
 repository.workspace = true
 description = "Converts the default stalwart setup to use stalwart panel"
-
+homepage.workspace = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
@@ -28,3 +28,4 @@ inquire = "0.6"
 clap = { version = "4", features = ["derive"] }
 log = { workspace = true }
 thiserror.workspace = true
+human-panic.workspace = true
