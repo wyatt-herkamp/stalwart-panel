@@ -32,6 +32,5 @@ watch(value, (newValue) => {
     margin-left: 0.5rem;
   }
 }
-input[type='checkbox'] {
-}
+
 </style>

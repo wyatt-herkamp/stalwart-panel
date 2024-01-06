@@ -19,7 +19,7 @@
         autocomplete="new-password"
         >Confirm Password</Password
       >
-      <SubmitButton class="dangerButton" :disabled="!passwordsValid">Change Password</SubmitButton>
+      <SubmitButton type="danger" :disabled="!passwordsValid">Change Password</SubmitButton>
     </form>
     <form class="accountActionSection" @submit.prevent="requirePasswordChange">
       <h3>Require Password Change</h3>
