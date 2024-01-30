@@ -4,7 +4,7 @@ pub mod panel_user;
 
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
-use strum::{Display, EnumIter, EnumString};
+use strum::{Display, EnumString};
 use typeshare::typeshare;
 use utils::database::{EmailAddress, Password};
 

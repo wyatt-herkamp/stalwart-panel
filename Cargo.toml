@@ -19,7 +19,7 @@ tokio = "1.33"
 rand = "0.8"
 sea-orm = "0.12"
 sqlx = "0.7"
-strum = { version = "0.25", features = ["derive"] }
+strum = { version = "0.26", features = ["derive"] }
 toml = "0.8"
 toml_edit = "0.21"
 thiserror = "1"
