@@ -21,7 +21,7 @@ sea-orm = { version = "0.12"}
 sqlx = "0.7"
 strum = { version = "0.25", features = ["derive"] }
 toml = "0.8"
-toml_edit = "0.21"
+toml_edit = "0.22"
 thiserror = "1"
 log = "0.4"
 human-panic = "1"
