@@ -1,5 +1,9 @@
 # Stalwart Panel
 An Unofficial Stalwart Panel. 
+## Good Bye
+Stalwart has made an official panel so use [their panel](https://github.com/stalwartlabs/webadmin/). 
+
+
 ### Requirements
 - Stalwart 0.3
 
